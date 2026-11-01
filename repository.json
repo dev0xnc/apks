@@ -39,6 +39,13 @@
       "version": "1.0.0",
       "description": "Prueba de ejecución real de WebAssembly en el navegador.",
       "manifest": "apps/minios-wasm-lab/manifest.json"
+    },
+    {
+      "id": "minios-tv",
+      "name": "MiniOS TV",
+      "version": "0.1.0",
+      "description": "Televisión en vivo, guía de programación y biblioteca multimedia.",
+      "manifest": "apps/minios-tv/manifest.json"
     }
   ]
 }
