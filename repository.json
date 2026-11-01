@@ -25,6 +25,20 @@
       "version": "1.0.0",
       "description": "Explorador y almacenamiento local de archivos del navegador.",
       "manifest": "apps/minios-files/manifest.json"
+    },
+    {
+      "id": "minios-runtime",
+      "name": "MiniOS Runtime",
+      "version": "0.1.0",
+      "description": "Catálogo y ejecutor de aplicaciones web y WebAssembly.",
+      "manifest": "apps/minios-runtime/manifest.json"
+    },
+    {
+      "id": "minios-wasm-lab",
+      "name": "MiniOS WebAssembly Lab",
+      "version": "1.0.0",
+      "description": "Prueba de ejecución real de WebAssembly en el navegador.",
+      "manifest": "apps/minios-wasm-lab/manifest.json"
     }
   ]
 }
