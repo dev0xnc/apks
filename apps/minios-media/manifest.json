@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "minios-media",
+  "name": "MiniOS Media",
+  "version": "1.0.0",
+  "description": "Reproductor local de audio y video y enlaces directos compatibles.",
+  "author": "dev0xnc",
+  "runtime": "web",
+  "entry": "index.html",
+  "icon": "",
+  "permissions": [],
+  "minBrowser": null
+}
