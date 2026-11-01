@@ -354,8 +354,6 @@ playerVideo.addEventListener("waiting",function(){$("playStatus").textContent="C
 playerVideo.addEventListener("error",function(){$("playStatus").textContent="No se pudo reproducir. Probá otra fuente o revisá compatibilidad/CORS.";});
 bindRegionFilters();
 function addMedia(type,url,name){if(!url)return;media[type].push({name:name||"Contenido agregado",url:url,category:type});save();render();say("Contenido agregado a "+(type==="movies"?"Películas":"Series")+".");}
-$("movieFile").onchange=function(){var f=this.files[0];if(f){var u=URL.createObjectURL(f);objectUrls.push(u);media.movies.push({name:f.name,url:u,category:"movies"});render();say("Archivo local agregado. Estará disponible mientras esta pestaña permanezca abierta.");}};
-$("seriesFile").onchange=function(){var f=this.files[0];if(f){var u=URL.createObjectURL(f);objectUrls.push(u);media.series.push({name:f.name,url:u,category:"series"});render();say("Episodio local agregado. Estará disponible mientras esta pestaña permanezca abierta.");}};
 
 
 function parseXml(text){var xml=new DOMParser().parseFromString(text,"application/xml");if(xml.querySelector("parsererror"))throw Error("El XML no es válido.");var out=[];xml.querySelectorAll("programme").forEach(function(p){var start=p.getAttribute("start"),stop=p.getAttribute("stop"),channel=p.getAttribute("channel"),title=p.querySelector("title");if(start&&stop&&title){function date(s){return new Date(s.slice(0,4)+"-"+s.slice(4,6)+"-"+s.slice(6,8)+"T"+s.slice(8,10)+":"+s.slice(10,12)+":"+s.slice(12,14)+"Z").toISOString();}try{out.push({start:date(start),stop:date(stop),channel:channel,title:title.textContent});}catch(e){}}});return out;}
