@@ -400,6 +400,8 @@ if($("footballSearch"))$("footballSearch").oninput=function(){filterOfficialSpor
 if($("countryFilter"))$("countryFilter").onchange=function(){selectedCountry=this.value;drawCategoryChips();renderChannels();};
 if($("search"))$("search").oninput=function(){renderChannels();renderFootball();};
 try{bindRegionFilters();}catch(e){console.warn("MiniOS TV: no se pudieron enlazar algunos filtros",e);}
+if($("footballCountry"))$("footballCountry").onchange=function(){filterOfficialSports();renderFootball();};
+if($("footballContinent"))$("footballContinent").onchange=function(){filterOfficialSports();renderFootball();};
 try{drawCategoryChips();renderOfficialSports();render();}catch(e){console.error("MiniOS TV: error de inicialización",e);if($("status"))$("status").textContent="MiniOS TV inició con un error: "+(e&&e.message?e.message:"revisá la consola del navegador");}
 })();
 </script></body></html>
