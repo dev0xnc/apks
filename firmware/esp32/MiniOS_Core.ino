@@ -89,70 +89,102 @@ footer{text-align:center;padding:20px;color:#70839e;font-size:12px}
 </main>
 <footer>MiniOS Core 1.1.0 · ESP32</footer>
 <script>
-let authHeader = "";
-async function protectedFetch(url, options = {}) {
-  if (!authHeader) {
-    const password = prompt("Contraseña de administración de MiniOS");
-    if (password === null) throw new Error("Autenticación cancelada");
-    authHeader = "Basic " + btoa("admin:" + password);
-  }
-  options.headers = {...(options.headers || {}), Authorization: authHeader};
-  const response = await fetch(url, options);
-  if (response.status === 401) {
-    authHeader = "";
-    throw new Error("Contraseña incorrecta");
-  }
-  return response;
+var authHeader = "";
+function showMessage(text) {
+  var el = document.getElementById("message");
+  if (el) el.textContent = text;
 }
-async function refreshStatus() {
-  try {
-    const response = await fetch("/api/status", {cache:"no-store"});
-    const d = await response.json();
-    document.getElementById("connected").textContent = d.connected ? "Conectado" : "Sin conexión";
-    document.getElementById("ssid").textContent = d.ssid || "Ninguna";
-    document.getElementById("savedSSID").textContent = d.savedSSID || "No configurada";
-    document.getElementById("wifiReason").textContent = d.statusText || "Desconocido";
-    document.getElementById("rssi").textContent = d.connected ? (d.rssi + " dBm") : "Sin señal";
-    document.getElementById("staIP").textContent = d.ip;
-    document.getElementById("apIP").textContent = d.apIP;
-    document.getElementById("heap").textContent = Math.round(d.freeHeap/1024) + " KB";
-    const h = Math.floor(d.uptime/3600), m = Math.floor((d.uptime%3600)/60);
-    document.getElementById("uptime").textContent = h + " h " + m + " min";
-  } catch(e) {
-    document.getElementById("connected").textContent = "Sin respuesta";
-  }
+function makeAuth() {
+  if (authHeader) return authHeader;
+  var password = window.prompt("Contraseña de administración de MiniOS");
+  if (password === null) throw new Error("Autenticación cancelada");
+  authHeader = "Basic " + btoa("admin:" + password);
+  return authHeader;
 }
-document.getElementById("wifiForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const message = document.getElementById("message");
-  message.textContent = "Enviando configuración...";
-  const body = new URLSearchParams(new FormData(e.currentTarget));
-  try {
-    const r = await protectedFetch("/api/wifi", {method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
-    const d = await r.json();
-    message.textContent = d.message;
-    if (r.ok) setTimeout(refreshStatus, 2500);
-  } catch(err) { message.textContent = err.message; }
-});
-document.getElementById("adminForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const body = new URLSearchParams(new FormData(e.currentTarget));
-  try {
-    const r = await protectedFetch("/api/admin", {method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
-    const d = await r.json();
-    alert(d.message);
-    if (r.ok) { authHeader = ""; e.currentTarget.reset(); }
-  } catch(err) { alert(err.message); }
-});
-document.getElementById("restartButton").addEventListener("click", async () => {
-  if (!confirm("¿Reiniciar MiniOS Core?")) return;
-  try {
-    const r = await protectedFetch("/api/restart", {method:"POST"});
-    if (r.ok) alert("MiniOS se está reiniciando.");
-  } catch(err) { alert(err.message); }
-});
+function protectedPost(url, body, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+  try { xhr.setRequestHeader("Authorization", makeAuth()); }
+  catch (e) { callback(e.message); return; }
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    if (xhr.status === 401) {
+      authHeader = "";
+      callback("Contraseña de administración incorrecta.");
+      return;
+    }
+    if (xhr.status < 200 || xhr.status >= 300) {
+      callback("Error HTTP " + xhr.status + ": " + xhr.responseText);
+      return;
+    }
+    var data;
+    try { data = JSON.parse(xhr.responseText); }
+    catch (e) { callback("Respuesta inválida del ESP32."); return; }
+    callback(null, data);
+  };
+  xhr.onerror = function() { callback("No se pudo comunicar con el ESP32."); };
+  xhr.send(body);
+}
+function refreshStatus() {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/api/status?t=" + new Date().getTime(), true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4 || xhr.status !== 200) return;
+    try {
+      var d = JSON.parse(xhr.responseText);
+      document.getElementById("connected").textContent = d.connected ? "Conectado" : "Sin conexión";
+      document.getElementById("ssid").textContent = d.ssid || "Ninguna";
+      document.getElementById("savedSSID").textContent = d.savedSSID || "No configurada";
+      document.getElementById("wifiReason").textContent = d.statusText || "Desconocido";
+      document.getElementById("rssi").textContent = d.connected ? (d.rssi + " dBm") : "Sin señal";
+      document.getElementById("staIP").textContent = d.ip || "0.0.0.0";
+      document.getElementById("apIP").textContent = d.apIP || "—";
+      document.getElementById("heap").textContent = Math.round(d.freeHeap / 1024) + " KB";
+      var h = Math.floor(d.uptime / 3600), m = Math.floor((d.uptime % 3600) / 60);
+      document.getElementById("uptime").textContent = h + " h " + m + " min";
+    } catch (e) {
+      document.getElementById("connected").textContent = "Respuesta inválida";
+    }
+  };
+  xhr.send(null);
+}
+function saveWifi(event) {
+  if (event && event.preventDefault) event.preventDefault();
+  var form = document.getElementById("wifiForm");
+  var ssid = form.elements["ssid"].value;
+  var password = form.elements["password"].value;
+  if (!ssid) { showMessage("Ingresá el nombre de la red Wi-Fi."); return false; }
+  showMessage("Solicitando autenticación...");
+  var body = "ssid=" + encodeURIComponent(ssid) + "&password=" + encodeURIComponent(password);
+  protectedPost("/api/wifi", body, function(error, data) {
+    if (error) { showMessage(error); return; }
+    showMessage(data.message || "Configuración recibida por el ESP32.");
+    window.setTimeout(refreshStatus, 1500);
+  });
+  return false;
+}
+function saveAdmin(event) {
+  if (event && event.preventDefault) event.preventDefault();
+  var form = document.getElementById("adminForm");
+  var body = "newPassword=" + encodeURIComponent(form.elements["newPassword"].value);
+  protectedPost("/api/admin", body, function(error, data) {
+    window.alert(error || (data && data.message) || "Solicitud completada.");
+    if (!error) { authHeader = ""; form.reset(); }
+  });
+  return false;
+}
+function restartMiniOS() {
+  if (!window.confirm("¿Reiniciar MiniOS Core?")) return;
+  protectedPost("/api/restart", "", function(error) {
+    window.alert(error || "MiniOS se está reiniciando.");
+  });
+}
+document.getElementById("wifiForm").onsubmit = saveWifi;
+document.getElementById("adminForm").onsubmit = saveAdmin;
+document.getElementById("restartButton").onclick = restartMiniOS;
 refreshStatus();
-setInterval(refreshStatus, 10000);
+window.setInterval(refreshStatus, 10000);
 </script>
 </body>
 </html>
