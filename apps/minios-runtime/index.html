@@ -33,7 +33,7 @@ h1{font-size:clamp(2rem,5vw,3.3rem);line-height:1.05;margin:12px 0}.hero p{color
 <body>
 <header><div class="logo">MINI<span>OS</span> / RUNTIME</div><div class="muted" id="capabilityLabel">Comprobando navegador…</div></header>
 <main>
-<section class="hero"><div class="eyebrow">MiniOS Application Runtime · 0.2</div><h1>Aplicaciones para<br>tu pantalla.</h1><p>Un catálogo de aplicaciones web y experiencias WebAssembly. MiniOS comprueba las capacidades del navegador antes de abrir cada aplicación.</p><div class="row"><button class="btn primary" id="refresh">Actualizar catálogo</button><button class="btn" id="home">Volver al inicio</button></div></section>
+<section class="hero"><div class="eyebrow">MiniOS Application Runtime · 0.3</div><h1>Aplicaciones para<br>tu pantalla.</h1><p>Un catálogo de aplicaciones web y experiencias WebAssembly. MiniOS comprueba las capacidades del navegador antes de abrir cada aplicación.</p><div class="row"><button class="btn primary" id="refresh">Actualizar catálogo</button><button class="btn" id="home">Volver al inicio</button></div></section>
 <div class="row"><input class="search" id="search" type="search" placeholder="Buscar aplicaciones…" aria-label="Buscar aplicaciones"></div>
 <div id="status">Cargando catálogo…</div><section class="grid" id="catalog"></section>
 <div class="notice" style="margin-top:28px"><strong>Compatibilidad:</strong> las aplicaciones web se ejecutan en el navegador. Las aplicaciones WebAssembly necesitan un navegador compatible. Los APK de Android y los programas Linux nativos no se ejecutan directamente desde una URL; deben adaptarse a tecnologías web o instalarse en un sistema compatible.</div>
@@ -83,8 +83,7 @@ if(app.runtime==="wasm-web"){
 var wasmURL=new URL(app.wasm,manifestURL);if(wasmURL.origin!==location.origin||!wasmURL.pathname.startsWith(appRoot.pathname))throw Error("La ruta WASM debe permanecer dentro de la carpeta de la aplicación.");
 var response=await fetch(wasmURL.href,{cache:"no-store"});if(!response.ok)throw Error("No se pudo descargar el módulo WASM (HTTP "+response.status+").");
 var encoded=(await response.text()).trim();var binary=Uint8Array.from(atob(encoded),function(ch){return ch.charCodeAt(0);});
-var compiled=await WebAssembly.compile(binary);var imports=WebAssembly.Module.imports(compiled);if(imports.length)throw Error("Este módulo necesita imports externos; el perfil MiniOS WASM v1 admite módulos sin imports.");
-var imports=WebAssembly.Module.imports(compiled);var allowed={now_ms:true,random:true,log:true};imports.forEach(function(x){if(x.module!=="minios"||x.kind!=="function"||!allowed[x.name])throw Error("Import WASM no permitido: "+x.module+"."+x.name);});var exports=WebAssembly.Module.exports(compiled);if(app.wasmExport&&!exports.some(function(x){return x.name===app.wasmExport;}))throw Error("El módulo no exporta la función declarada: "+app.wasmExport);
+var compiled=await WebAssembly.compile(binary);var imports=WebAssembly.Module.imports(compiled);var allowed={now_ms:true,random:true,log:true};imports.forEach(function(x){if(x.module!=="minios"||x.kind!=="function"||!allowed[x.name])throw Error("Import WASM no permitido: "+x.module+"."+x.name);});var exports=WebAssembly.Module.exports(compiled);if(app.wasmExport&&!exports.some(function(x){return x.name===app.wasmExport;}))throw Error("El módulo no exporta la función declarada: "+app.wasmExport);
 }
 document.getElementById("runTitle").textContent=app.name+" · "+app.version;
 var frame=document.getElementById("runframe");frame.src=entryURL.href;document.getElementById("runner").classList.add("active");
