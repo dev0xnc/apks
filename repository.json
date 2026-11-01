@@ -29,7 +29,7 @@
     {
       "id": "minios-runtime",
       "name": "MiniOS Runtime",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Catálogo y ejecutor de aplicaciones web y WebAssembly.",
       "manifest": "apps/minios-runtime/manifest.json"
     },
