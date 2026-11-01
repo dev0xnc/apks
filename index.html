@@ -32,6 +32,33 @@ footer{padding:24px;text-align:center;color:#71819c;font-size:.8rem}
 </main>
 <footer>MiniOS Community Catalog · dev0xnc</footer>
 <script>
+ let authHeader = "";
+
+async function secureFetch(url, options = {}) {
+    if (!authHeader) {
+        const password = prompt("Contraseña de administración de MiniOS:");
+
+        if (password === null) {
+            throw new Error("Autenticación cancelada");
+        }
+
+        authHeader = "Basic " + btoa("admin:" + password);
+    }
+
+    options.headers = {
+        ...(options.headers || {}),
+        Authorization: authHeader
+    };
+
+    const response = await fetch(url, options);
+
+    if (response.status === 401) {
+        authHeader = "";
+        throw new Error("Contraseña incorrecta");
+    }
+
+    return response;
+}
 const catalogUrl = new URL("./repository.json", location.href);
 const container = document.getElementById("apps");
 const search = document.getElementById("search");
