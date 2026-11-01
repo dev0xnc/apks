@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "minios-runtime",
   "name": "MiniOS Runtime",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Ejecutor y catálogo de aplicaciones web y WebAssembly.",
   "author": "dev0xnc",
   "runtime": "web",
