@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.4.0",
-      "description": "Catálogo internacional ampliado de canales y películas, con categorías y barra de progreso.",
+      "version": "0.5.0",
+      "description": "Centro multimedia con navegación fija, fútbol, buscador, tiempo de búsqueda configurable y catálogos de películas y series.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
