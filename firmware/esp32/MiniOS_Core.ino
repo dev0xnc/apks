@@ -45,7 +45,10 @@ footer{text-align:center;padding:20px;color:#70839e;font-size:12px}
 <h2>Estado del sistema</h2>
 <div class="grid">
 <div class="metric"><span>Wi-Fi del router</span><strong id="connected">Consultando...</strong></div>
-<div class="metric"><span>Red</span><strong id="ssid">—</strong></div>
+<div class="metric"><span>Red conectada</span><strong id="ssid">—</strong></div>
+<div class="metric"><span>Red guardada</span><strong id="savedSSID">—</strong></div>
+<div class="metric"><span>Diagnóstico Wi-Fi</span><strong id="wifiReason">—</strong></div>
+<div class="metric"><span>Señal</span><strong id="rssi">—</strong></div>
 <div class="metric"><span>IP del router</span><strong id="staIP">—</strong></div>
 <div class="metric"><span>IP de acceso MiniOS</span><strong id="apIP">—</strong></div>
 <div class="metric"><span>Memoria libre</span><strong id="heap">—</strong></div>
@@ -84,7 +87,7 @@ footer{text-align:center;padding:20px;color:#70839e;font-size:12px}
 <button class="secondary" id="restartButton">Reiniciar MiniOS Core</button>
 </section>
 </main>
-<footer>MiniOS Core 1.0.0 · ESP32</footer>
+<footer>MiniOS Core 1.1.0 · ESP32</footer>
 <script>
 let authHeader = "";
 async function protectedFetch(url, options = {}) {
@@ -107,6 +110,9 @@ async function refreshStatus() {
     const d = await response.json();
     document.getElementById("connected").textContent = d.connected ? "Conectado" : "Sin conexión";
     document.getElementById("ssid").textContent = d.ssid || "Ninguna";
+    document.getElementById("savedSSID").textContent = d.savedSSID || "No configurada";
+    document.getElementById("wifiReason").textContent = d.statusText || "Desconocido";
+    document.getElementById("rssi").textContent = d.connected ? (d.rssi + " dBm") : "Sin señal";
     document.getElementById("staIP").textContent = d.ip;
     document.getElementById("apIP").textContent = d.apIP;
     document.getElementById("heap").textContent = Math.round(d.freeHeap/1024) + " KB";
@@ -189,9 +195,24 @@ void handleStatus() {
   json += ",\"ssid\":\"" + jsonEscape(connected ? WiFi.SSID() : "") + "\"";
   json += ",\"ip\":\"" + (connected ? WiFi.localIP().toString() : String("0.0.0.0")) + "\"";
   json += ",\"apIP\":\"" + WiFi.softAPIP().toString() + "\"";
+  json += ",\"savedSSID\":\"" + jsonEscape(savedSSID) + "\"";
+  json += ",\"wifiStatus\":" + String((int)WiFi.status());
+  String statusText = "Desconocido";
+  switch (WiFi.status()) {
+    case WL_IDLE_STATUS: statusText = "Iniciando"; break;
+    case WL_NO_SSID_AVAIL: statusText = "No se encuentra esa red"; break;
+    case WL_SCAN_COMPLETED: statusText = "Búsqueda completada"; break;
+    case WL_CONNECTED: statusText = "Conectado"; break;
+    case WL_CONNECT_FAILED: statusText = "Falló la autenticación o conexión"; break;
+    case WL_CONNECTION_LOST: statusText = "Conexión perdida"; break;
+    case WL_DISCONNECTED: statusText = savedSSID.isEmpty() ? "Falta configurar una red" : "Desconectado; reintentando"; break;
+    default: statusText = "Estado Wi-Fi " + String((int)WiFi.status()); break;
+  }
+  json += ",\"statusText\":\"" + jsonEscape(statusText) + "\"";
+  json += ",\"rssi\":" + String(connected ? WiFi.RSSI() : 0);
   json += ",\"freeHeap\":" + String(ESP.getFreeHeap());
   json += ",\"uptime\":" + String(millis() / 1000);
-  json += ",\"version\":\"1.0.0\"}";
+  json += ",\"version\":\"1.1.0\"}";
   sendJSON(200, json);
 }
 
