@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.6.0",
-      "description": "Centro multimedia con reproductor propio, controles completos, fuentes alternativas y filtros regionales.",
+      "version": "0.6.1",
+      "description": "Centro multimedia con reproductor propio, detección HLS corregida, controles completos, fuentes alternativas y filtros regionales.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
