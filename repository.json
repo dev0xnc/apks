@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "MiniOS Community Catalog",
+  "id": "dev0xnc.apks",
+  "description": "Web applications compatible with MiniOS.",
+  "baseUrl": "./",
+  "apps": [
+    {
+      "id": "minios-welcome",
+      "name": "MiniOS Welcome",
+      "version": "1.0.0",
+      "manifest": "apps/minios-welcome/manifest.json"
+    }
+  ]
+}
