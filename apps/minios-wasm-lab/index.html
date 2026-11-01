@@ -1,0 +1,10 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MiniOS WASM Lab</title><style>body{font:16px system-ui;background:#101a2b;color:#f2f6ff;padding:25px;max-width:700px;margin:auto}article{background:#1a2a43;padding:22px;border-radius:15px}button{padding:12px 16px;border:0;border-radius:9px;background:#79adff;font-weight:bold;cursor:pointer}output{display:block;margin-top:18px;color:#8ee0b4;overflow-wrap:anywhere}.muted{color:#adbed5;line-height:1.6}</style></head><body><article><h1>◈ MiniOS WebAssembly Lab</h1><p class="muted">Esta aplicación ejecuta un pequeño módulo WebAssembly compilado, directamente dentro del navegador. No es una simulación en JavaScript.</p><button id="run">Ejecutar módulo WASM</button><output id="result">Esperando…</output></article><script>
+(function(){
+var bytes=new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,127,3,2,1,0,7,8,1,4,109,97,105,110,0,0,10,6,1,4,0,65,42,11]);
+document.getElementById("run").onclick=function(){
+var out=document.getElementById("result");
+if(typeof WebAssembly!=="object"){out.textContent="Este navegador no admite WebAssembly.";return;}
+WebAssembly.instantiate(bytes).then(function(result){var value=result.instance.exports.main();out.textContent="¡Módulo WASM ejecutado correctamente! Resultado devuelto por el código compilado: "+value;}).catch(function(e){out.textContent="Error al ejecutar WASM: "+e.message;});
+};
+})();
+</script></body></html>
