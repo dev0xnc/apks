@@ -9,7 +9,22 @@
       "id": "minios-welcome",
       "name": "MiniOS Welcome",
       "version": "1.0.0",
+      "description": "Pantalla de bienvenida y presentación de MiniOS.",
       "manifest": "apps/minios-welcome/manifest.json"
+    },
+    {
+      "id": "minios-media",
+      "name": "MiniOS Media",
+      "version": "1.0.0",
+      "description": "Reproductor local de audio y video y enlaces directos compatibles.",
+      "manifest": "apps/minios-media/manifest.json"
+    },
+    {
+      "id": "minios-files",
+      "name": "MiniOS Files",
+      "version": "1.0.0",
+      "description": "Explorador y almacenamiento local de archivos del navegador.",
+      "manifest": "apps/minios-files/manifest.json"
     }
   ]
 }
