@@ -1,16 +1,14 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MiniOS WASM Lab</title><style>body{font:16px system-ui;background:#101a2b;color:#f2f6ff;padding:25px;max-width:700px;margin:auto}article{background:#1a2a43;padding:22px;border-radius:15px}button{padding:12px 16px;border:0;border-radius:9px;background:#79adff;font-weight:bold;cursor:pointer}output{display:block;margin-top:18px;color:#8ee0b4;overflow-wrap:anywhere}.muted{color:#adbed5;line-height:1.6}</style></head><body><article><h1>◈ MiniOS WebAssembly Lab</h1><p class="muted">Esta aplicación ejecuta un pequeño módulo WebAssembly compilado, directamente dentro del navegador. No es una simulación en JavaScript.</p><button id="run">Ejecutar módulo WASM</button><output id="result">Esperando…</output></article><script>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MiniOS WASM Lab</title><script src="../../sdk/minios-sdk.js"></script><style>body{font:16px system-ui;background:#101a2b;color:#f2f6ff;padding:25px;max-width:700px;margin:auto}article{background:#1a2a43;padding:22px;border-radius:15px}button{padding:12px 16px;border:0;border-radius:9px;background:#79adff;font-weight:bold;cursor:pointer}output{display:block;margin-top:18px;color:#8ee0b4;overflow-wrap:anywhere}.muted{color:#adbed5;line-height:1.6}</style></head><body><article><h1>◈ MiniOS WebAssembly Lab</h1><p class="muted">Esta aplicación ejecuta un pequeño módulo WebAssembly compilado, directamente dentro del navegador. No es una simulación en JavaScript.</p><button id="run">Ejecutar módulo WASM</button><output id="result">Esperando…</output></article><script>
 (function(){
 document.getElementById("run").onclick=async function(){
-var out=document.getElementById("result");out.textContent="Descargando y compilando módulo…";
-if(typeof WebAssembly!=="object"){out.textContent="Este navegador no admite WebAssembly.";return;}
+var out=document.getElementById("result");out.textContent="Cargando MiniOS SDK y módulo WASM…";
 try{
-var response=await fetch("module.wasm.b64",{cache:"no-store"});if(!response.ok)throw Error("No se pudo descargar el módulo (HTTP "+response.status+").");
-var encoded=(await response.text()).trim();var bytes=Uint8Array.from(atob(encoded),function(ch){return ch.charCodeAt(0);});
-var compiled=await WebAssembly.compile(bytes);var imports=WebAssembly.Module.imports(compiled);
-if(imports.length)throw Error("El módulo de prueba requiere imports no admitidos.");
-var instance=await WebAssembly.instantiate(compiled,{});var value=instance.exports.main();
-out.textContent="¡Módulo WASM externo ejecutado correctamente! Resultado: "+value;
-}catch(e){out.textContent="Error al ejecutar WASM: "+e.message;}
+if(!window.MiniOS||!MiniOS.wasm)throw Error("No se pudo cargar MiniOS SDK.");
+var instance=await MiniOS.wasm.load("module.wasm.b64");
+if(typeof instance.exports.main!=="function")throw Error("El módulo no exporta main().");
+var value=instance.exports.main();
+out.textContent="WASM ejecutado mediante MiniOS SDK. Resultado: "+value+" · SDK "+MiniOS.version;
+}catch(err){out.textContent="Error: "+err.message;}
 };
 })();
 </script></body></html>
