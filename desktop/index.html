@@ -4,17 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d18">
-<title>MiniOS 3.0</title>
+<title>MiniOS 3.2</title>
+<meta name="description" content="MiniOS: centro multimedia adaptable para TV, computadora y celular.">
 <style>
 :root{color-scheme:dark;--bg:#080d18;--panel:#101a2b;--panel2:#17253b;--line:#2a3c57;--text:#f1f6ff;--muted:#9aabc2;--accent:#79adff;--shadow:#0007}
-body.light{color-scheme:light;--bg:#edf2f9;--panel:#fff;--panel2:#e3ebf6;--line:#cbd6e5;--text:#142238;--muted:#52647d;--accent:#286bd2;--shadow:#24364b18}
+body.light{color-scheme:light;--bg:#e8eef6;--panel:#f4f7fb;--panel2:#e1e9f3;--line:#c5d1e0;--text:#17263b;--muted:#52647d;--accent:#286bd2;--shadow:#24364b18}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 65% -10%,#1c3965 0,transparent 48%),var(--bg);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
 body.light{background:radial-gradient(ellipse at 65% -10%,#d4e4ff 0,transparent 48%),var(--bg)}
 button,input{font:inherit}
 .top{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 4vw;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
 .logo{font-weight:950;letter-spacing:.12em;font-size:1.15rem}.logo span{color:var(--accent)}
-.topright{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:.9rem}
+.topright{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:.9rem}
+.profile-select{max-width:145px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font-size:.82rem}
 .status{display:flex;align-items:center;gap:7px}.dot{width:8px;height:8px;border-radius:50%;background:#38c98a;display:inline-block}
 .layout{display:grid;grid-template-columns:215px minmax(0,1fr);max-width:1500px;margin:auto;min-height:calc(100vh - 72px)}
 .sidebar{padding:28px 16px;border-right:1px solid var(--line);background:#0c1422aa}
@@ -54,6 +56,17 @@ body.tv-mode .card strong{font-size:1.15rem}
 body.tv-mode .card p{font-size:.98rem}
 body.tv-mode .grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:19px}
 body.tv-mode .btn,body.tv-mode .navbtn{padding:15px 18px;font-size:1.02rem}
+body.tv-mode .sidebar{background:var(--panel);}
+body.tv-mode .navbtn{min-height:52px}
+body.tv-mode .card:focus-visible,body.tv-mode .btn:focus-visible,body.tv-mode .navbtn:focus-visible{outline-width:4px!important;outline-offset:5px}
+body.mobile-mode .layout{grid-template-columns:1fr}
+body.mobile-mode .sidebar{display:flex;gap:5px;overflow-x:auto;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line)}
+body.mobile-mode .navlabel{display:none}
+body.mobile-mode .navbtn{white-space:nowrap;width:auto;margin:0;padding:10px 12px}
+body.mobile-mode .navbtn .navtext{display:none}
+body.mobile-mode .content{padding:20px 14px 40px}
+body.mobile-mode .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.mobile-mode .card{min-height:145px;padding:14px}
 @media(max-width:760px){.layout{grid-template-columns:1fr}.sidebar{display:flex;gap:5px;overflow:auto;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line)}.navlabel{display:none}.navbtn{white-space:nowrap;width:auto;margin:0;padding:10px 12px}.navbtn .navtext{display:none}.content{padding:22px 15px 45px}.top{padding:0 16px}.topright{gap:9px;font-size:.78rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.card{min-height:150px;padding:14px}}
 @media(max-width:390px){.grid{grid-template-columns:1fr}.topright .status{display:none}}
 </style>
@@ -61,7 +74,7 @@ body.tv-mode .btn,body.tv-mode .navbtn{padding:15px 18px;font-size:1.02rem}
 <body>
 <header class="top">
  <div class="logo">MINI<span>OS</span></div>
- <div class="topright"><span class="status"><i class="dot"></i><span id="netLabel">En línea</span></span><span id="clock">--:--</span><span class="pill">3.0</span></div>
+ <div class="topright"><span class="status"><i class="dot"></i><span id="netLabel">En línea</span></span><span id="clock">--:--</span><select class="profile-select" id="profileSelect" aria-label="Tipo de dispositivo"><option value="auto">Automático</option><option value="tv">TV Box</option><option value="desktop">PC</option><option value="mobile">Celular</option></select><span class="pill">3.2</span></div>
 </header>
 <div class="layout">
  <aside class="sidebar" aria-label="Navegación principal">
@@ -77,7 +90,7 @@ body.tv-mode .btn,body.tv-mode .navbtn{padding:15px 18px;font-size:1.02rem}
   <section class="hero">
    <div class="eyebrow">Sistema multimedia · Web edition</div>
    <h1>Tu entretenimiento.<br>En un solo lugar.</h1>
-   <p>Bienvenido a MiniOS 3.0. Abrí tus aplicaciones, organizá tus favoritos y controlá la experiencia desde el teclado o un control remoto compatible.</p>
+   <p>Bienvenido a MiniOS. Tu centro multimedia para TV Box, computadora y celular. Elegí cómo navegar y disfrutá tus aplicaciones desde una sola pantalla.</p>
    <div class="actions"><button class="btn primary" id="goApps">Ver aplicaciones</button><button class="btn" id="toggleTV">Activar modo TV</button><button class="btn" id="full">Pantalla completa</button></div>
   </section>
   <div id="searchBox"><input class="search" id="search" type="search" placeholder="Buscar aplicaciones..." aria-label="Buscar aplicaciones"></div>
@@ -103,18 +116,21 @@ body.tv-mode .btn,body.tv-mode .navbtn{padding:15px 18px;font-size:1.02rem}
    </section>
    <section class="panel"><h2>Controles</h2><p class="muted">Flechas: moverse · Enter: abrir o seleccionar · Escape: salir de pantalla completa. También podés usar Tab y tocar los elementos en pantallas táctiles.</p></section>
   </section>
-  <footer>MiniOS 3.0 · Proyecto independiente · Interfaz web progresiva</footer>
+  <footer>MiniOS 3.2 · Centro multimedia multiplataforma</footer>
  </main>
 </div>
 <script>
 (function(){
 var body=document.body,storeKey="minios_favorites",addressInput=document.getElementById("espAddress"),message=document.getElementById("message"),appsData=[];
-var theme=localStorage.getItem("minios_theme")||"dark",tv=localStorage.getItem("minios_tv")==="1";
+var theme=localStorage.getItem("minios_theme")||"dark",profile=localStorage.getItem("minios_profile")||"auto",tv=false;
 var saved=localStorage.getItem("minios_esp_address");if(saved)addressInput.value=saved;
 function applyTheme(){body.classList.toggle("light",theme==="light");document.getElementById("themeBtn").textContent=theme==="light"?"Usar tema oscuro":"Usar tema claro";}
-function applyTV(){body.classList.toggle("tv-mode",tv);var label="Modo TV: "+(tv?"encendido":"apagado");document.getElementById("tvBtn").textContent=label;document.getElementById("toggleTV").textContent=tv?"Desactivar modo TV":"Activar modo TV";}
-function setTV(){tv=!tv;localStorage.setItem("minios_tv",tv?"1":"0");applyTV();}
-applyTheme();applyTV();
+function detectProfile(){var ua=navigator.userAgent||"",mobile=/Android.*Mobile|iPhone|iPod|Windows Phone/i.test(ua)||((navigator.maxTouchPoints||0)>1&&Math.min(screen.width,screen.height)<600);var androidTV=/Android/i.test(ua)&&!/Mobile/i.test(ua);if(androidTV&&Math.min(screen.width,screen.height)>=500)return "tv";if(mobile)return "mobile";return "desktop";}
+function applyProfile(){var active=profile==="auto"?detectProfile():profile;tv=active==="tv";body.classList.toggle("tv-mode",tv);body.classList.toggle("mobile-mode",active==="mobile");document.getElementById("profileSelect").value=profile;var label="Modo TV: "+(tv?"encendido":"apagado");document.getElementById("tvBtn").textContent=label;document.getElementById("toggleTV").textContent=tv?"Desactivar modo TV":"Activar modo TV";}
+function setProfile(value){profile=value;localStorage.setItem("minios_profile",profile);applyProfile();}
+function setTV(){setProfile(tv?"auto":"tv");}
+document.getElementById("profileSelect").onchange=function(){setProfile(this.value);};
+applyTheme();applyProfile();
 document.getElementById("themeBtn").onclick=function(){theme=theme==="dark"?"light":"dark";localStorage.setItem("minios_theme",theme);applyTheme();};
 document.getElementById("tvBtn").onclick=setTV;document.getElementById("toggleTV").onclick=setTV;
 document.getElementById("full").onclick=function(){if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();else message.textContent="Pantalla completa no disponible en este navegador.";};
