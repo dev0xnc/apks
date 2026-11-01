@@ -3,7 +3,7 @@
 var VERSION="0.1.0";
 var allowed={now_ms:true,random:true,log:true};
 function decodeBase64(value){
-var clean=String(value).replace(/\\s+/g,"");
+var clean=String(value).replace(/\s+/g,"");
 var raw=global.atob(clean),bytes=new Uint8Array(raw.length);
 for(var i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
 return bytes;
@@ -17,7 +17,7 @@ log:function(){if(global.console&&console.log)console.log("[MiniOS WASM] módulo
 }
 async function loadWasm(path){
 if(typeof WebAssembly!=="object")throw new Error("WebAssembly no está disponible.");
-var response=await fetch(new URL(path,global.location.href).href,{cache:"no-store"});
+var appRoot=new URL("./",global.location.href);var moduleURL=new URL(path,global.location.href);if(moduleURL.origin!==global.location.origin||!moduleURL.pathname.startsWith(appRoot.pathname))throw new Error("La ruta WASM debe permanecer dentro de la carpeta de la aplicación.");var response=await fetch(moduleURL.href,{cache:"no-store"});
 if(!response.ok)throw new Error("No se pudo descargar WASM: HTTP "+response.status);
 var bytes=decodeBase64(await response.text());
 var module=await WebAssembly.compile(bytes);
