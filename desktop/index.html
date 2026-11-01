@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080d18">
+<title>MiniOS Desktop</title>
+<style>
+:root{color-scheme:dark;--bg:#080d18;--panel:#111b2d;--panel2:#17243a;--line:#293b57;--text:#edf4ff;--muted:#9aabc4;--accent:#79adff;--good:#72d6a0}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 18% 0%,#1c3153 0,transparent 42%),var(--bg);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+.top{height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--line);background:#0b1322dd;position:sticky;top:0;z-index:2;backdrop-filter:blur(12px)}
+.logo{font-weight:900;letter-spacing:.08em}.logo span{color:var(--accent)}.topright{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:.9rem}
+main{max-width:1120px;margin:auto;padding:34px 22px 70px}.welcome{display:flex;align-items:end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:.76rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+h1{font-size:clamp(2.1rem,6vw,3.5rem);line-height:1.05;margin:9px 0}.sub{color:var(--muted);margin:0;line-height:1.6}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:11px;padding:11px 15px;text-decoration:none;font:inherit;font-weight:700;cursor:pointer}.btn.primary{background:var(--accent);color:#071326;border-color:transparent}
+.sectionhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:28px 0 14px}.sectionhead h2{font-size:1.1rem;margin:0}.muted{color:var(--muted);font-size:.88rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.tile{min-height:170px;padding:18px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,#17243a,#101827);display:flex;flex-direction:column;text-decoration:none;color:var(--text);transition:transform .15s,border-color .15s}
+.tile:hover,.tile:focus{transform:translateY(-2px);border-color:var(--accent);outline:none}
+.icon{width:46px;height:46px;border-radius:13px;background:#263d61;display:grid;place-items:center;font-size:1.45rem;margin-bottom:14px}
+.tile strong{font-size:1.02rem}.tile p{color:var(--muted);font-size:.88rem;line-height:1.5;margin:7px 0 0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row input{flex:1;min-width:190px;background:#080f1b;border:1px solid #344863;border-radius:9px;padding:12px;color:var(--text);font:inherit}
+#apps .tile{min-height:155px}#message{min-height:20px;color:var(--good);font-size:.88rem;margin-top:10px}
+footer{text-align:center;color:#71819c;font-size:.8rem;padding:20px}
+@media(max-width:600px){.top{padding:0 16px}.topright{font-size:.78rem}main{padding:25px 15px 50px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tile{min-height:155px;padding:14px}}
+@media(max-width:370px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+ <div class="logo">MINI<span>OS</span></div>
+ <div class="topright"><span id="clock">--:--</span><span id="device">Escritorio web</span></div>
+</header>
+<main>
+ <section class="welcome">
+  <div><div class="eyebrow">Sistema multimedia · Web edition</div><h1>Bienvenido a MiniOS</h1><p class="sub">Tu espacio para aplicaciones, herramientas y contenido.</p></div>
+  <div class="actions"><button class="btn" id="fullscreen">Pantalla completa</button><a class="btn primary" href="../">Abrir Store</a></div>
+ </section>
+ <div class="sectionhead"><h2>Accesos rápidos</h2><span class="muted">Centro de aplicaciones</span></div>
+ <section class="grid">
+  <a class="tile" href="../"><div class="icon">▦</div><strong>MiniOS Store</strong><p>Explorá el catálogo e iniciá aplicaciones web.</p></a>
+  <a class="tile" id="controlLink" href="http://192.168.1.58"><div class="icon">⚙</div><strong>Centro de control</strong><p>Configuración y estado del ESP32 MiniOS Core.</p></a>
+  <a class="tile" href="../apps/minios-welcome/"><div class="icon">✦</div><strong>Bienvenida</strong><p>Primera aplicación de MiniOS.</p></a>
+  <a class="tile" href="#installed"><div class="icon">▣</div><strong>Aplicaciones</strong><p>Ver las aplicaciones disponibles en el catálogo.</p></a>
+ </section>
+ <section class="panel">
+  <div class="sectionhead" style="margin:0 0 12px"><h2>Conexión con MiniOS Core</h2><span class="muted">ESP32 en tu red</span></div>
+  <p class="muted">Si cambia la dirección IP del ESP32, actualizala acá. La dirección se guarda en este navegador.</p>
+  <div class="row"><input id="espAddress" type="text" inputmode="decimal" value="192.168.1.58" aria-label="Dirección IP del ESP32"><button class="btn primary" id="saveAddress">Guardar dirección</button><a class="btn" id="openControl" href="http://192.168.1.58">Abrir panel</a></div>
+  <div id="message" role="status"></div>
+ </section>
+ <div class="sectionhead" id="installed"><h2>Aplicaciones instaladas en el catálogo</h2><span class="muted" id="appCount">Cargando…</span></div>
+ <section class="grid" id="apps"><p class="muted">Cargando catálogo…</p></section>
+</main>
+<footer>MiniOS Desktop · dev0xnc · Interfaz web</footer>
+<script>
+(function(){
+ var addressInput=document.getElementById("espAddress");
+ var message=document.getElementById("message");
+ var saved=localStorage.getItem("minios_esp_address");
+ if(saved) addressInput.value=saved;
+ function validAddress(value){
+   return /^(https?:\/\/)?[a-z0-9.-]+(:[0-9]{1,5})?$/i.test(value.trim());
+ }
+ function updateLinks(){
+   var value=addressInput.value.trim();
+   if(!validAddress(value)){message.textContent="Ingresá una dirección válida, por ejemplo 192.168.1.58.";return false;}
+   if(!/^https?:\/\//i.test(value)) value="http://"+value;
+   value=value.replace(/\/$/,"");
+   document.getElementById("controlLink").href=value;
+   document.getElementById("openControl").href=value;
+   return true;
+ }
+ document.getElementById("saveAddress").onclick=function(){
+   if(!updateLinks())return;
+   localStorage.setItem("minios_esp_address",addressInput.value.trim());
+   message.textContent="Dirección guardada en este navegador.";
+ };
+ addressInput.onchange=updateLinks;
+ updateLinks();
+ document.getElementById("fullscreen").onclick=function(){
+   if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+   else message.textContent="La pantalla completa no está disponible en este navegador.";
+ };
+ function tick(){
+   var d=new Date();
+   document.getElementById("clock").textContent=d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
+ }
+ tick();setInterval(tick,15000);
+ document.getElementById("device").textContent=/Android/i.test(navigator.userAgent)?"Android":/TV|SMART-TV|GoogleTV/i.test(navigator.userAgent)?"TV / navegador":"Web";
+ var base=new URL("../",location.href);
+ fetch(new URL("repository.json",base),{cache:"no-store"}).then(function(r){
+   if(!r.ok)throw new Error("HTTP "+r.status);return r.json();
+ }).then(function(data){
+   var apps=document.getElementById("apps");apps.innerHTML="";
+   var items=data.apps||[];
+   document.getElementById("appCount").textContent=items.length+" aplicación(es)";
+   if(!items.length){apps.innerHTML='<p class="muted">Todavía no hay aplicaciones en el catálogo.</p>';return;}
+   items.forEach(function(item){
+     var path=item.path;
+     if(!path&&item.manifest)path=item.manifest.replace(/manifest\.json$/,"")+(item.entry||"index.html");
+     var card=document.createElement("a");card.className="tile";card.href=new URL(path||"",base).href;
+     var icon=document.createElement("div");icon.className="icon";icon.textContent="▣";
+     var title=document.createElement("strong");title.textContent=item.name||item.id||"Aplicación";
+     var desc=document.createElement("p");desc.textContent=item.description||"Aplicación web de MiniOS.";
+     card.appendChild(icon);card.appendChild(title);card.appendChild(desc);apps.appendChild(card);
+   });
+ }).catch(function(){
+   document.getElementById("apps").innerHTML='<p class="muted">No se pudo cargar el catálogo. Revisá la conexión a Internet.</p>';
+   document.getElementById("appCount").textContent="Sin conexión";
+ });
+})();
+</script>
+</body>
+</html>
