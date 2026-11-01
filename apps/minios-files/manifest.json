@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "minios-files",
+  "name": "MiniOS Files",
+  "version": "1.0.0",
+  "description": "Explorador y almacenamiento local de archivos del navegador.",
+  "author": "dev0xnc",
+  "runtime": "web",
+  "entry": "index.html",
+  "icon": "",
+  "permissions": [],
+  "minBrowser": null
+}
