@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131c">
+  <title>MiniOS · Inicio</title>
+  <style>
+    :root{color-scheme:dark;--bg:#10131c;--panel:#191f2c;--text:#f3f5fb;--muted:#a6afc2;--accent:#77a7ff;--line:#2b3548}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#243454 0,transparent 42%),var(--bg);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;padding:24px}
+    main{width:min(760px,100%)}.tag{color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    h1{font-size:clamp(2.4rem,8vw,4.5rem);line-height:1;margin:.5rem 0 1rem}p{color:var(--muted);line-height:1.65}
+    .card{margin-top:28px;padding:24px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#1b2434,#151a25);box-shadow:0 24px 70px #0005}
+    .status{display:inline-flex;align-items:center;gap:9px;color:#b8f5d0;font-size:.9rem}.dot{width:9px;height:9px;border-radius:50%;background:#56d68b;box-shadow:0 0 14px #56d68b}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:20px}.item{padding:15px;border:1px solid var(--line);border-radius:13px;background:#111722}
+    .item strong{display:block;margin-bottom:5px}.item span{font-size:.88rem;color:var(--muted)}
+    footer{margin-top:20px;color:#7e899e;font-size:.8rem}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="tag">MiniOS · Web app</div>
+    <h1>Hola, mundo.</h1>
+    <p>Esta es la primera aplicación del catálogo. La interfaz se ejecuta en el navegador del dispositivo; el ESP32 puede encargarse de funciones de control y comunicación local.</p>
+    <section class="card">
+      <div class="status"><span class="dot"></span> Aplicación cargada correctamente</div>
+      <div class="grid">
+        <div class="item"><strong>Formato</strong><span>.mapp · Web</span></div>
+        <div class="item"><strong>Versión</strong><span id="version">1.0.0</span></div>
+        <div class="item"><strong>Dispositivo</strong><span id="device">Detectando navegador…</span></div>
+      </div>
+    </section>
+    <footer>MiniOS Community Catalog · dev0xnc</footer>
+  </main>
+  <script>
+    document.getElementById("device").textContent =
+      /Android/i.test(navigator.userAgent) ? "Android / navegador" :
+      /TV|SMART-TV|GoogleTV/i.test(navigator.userAgent) ? "Posible Smart TV" :
+      "Navegador web";
+  </script>
+</body>
+</html>
