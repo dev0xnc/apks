@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.6.3",
-      "description": "Centro multimedia con inicio más robusto, almacenamiento protegido y filtros regionales corregidos.",
+      "version": "0.7.0",
+      "description": "Centro multimedia adaptable con directorio de fútbol oficial, TV, películas y biblioteca personal.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
