@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.3.0",
-      "description": "Catálogo internacional de TV por país y categoría, películas de dominio público y biblioteca multimedia.",
+      "version": "0.4.0",
+      "description": "Catálogo internacional ampliado de canales y películas, con categorías y barra de progreso.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
