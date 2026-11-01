@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.2.0",
-      "description": "TV por categorías y actualizador de canales argentinos.",
+      "version": "0.3.0",
+      "description": "Catálogo internacional de TV por país y categoría, películas de dominio público y biblioteca multimedia.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
