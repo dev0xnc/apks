@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.6.2",
-      "description": "Centro multimedia con clasificación deportiva más precisa, reproductor propio y filtros regionales.",
+      "version": "0.7.0",
+      "description": "Centro multimedia adaptable con fuentes oficiales de fútbol, reproductor y cargas optimizadas.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
