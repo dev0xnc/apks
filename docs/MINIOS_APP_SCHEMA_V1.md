@@ -28,6 +28,6 @@ For `runtime: "wasm-web"`, include:
 - `wasmFormat`: must be `"base64"`.
 - `wasmExport`: optional export name that Runtime verifies exists.
 
-Version 1 supports standalone modules with no external imports. The app's `entry` page is responsible for instantiating the module and connecting its exports to the user interface, input, audio, and graphics. This is deliberately not a universal WASI or native-app compatibility layer.
+The MiniOS WebAssembly ABI v1 allows only documented function imports from the `minios` namespace (`now_ms`, `random`, and `log`). The app's `entry` page loads the shared SDK and connects module exports to its interface. See `docs/MINIOS_WASM_ABI_V1.md`. This is not a universal WASI or native-app compatibility layer.
 
 All entry and WASM paths must stay inside the app directory and on the MiniOS site origin. Catalog entries and manifests are public input: do not put secrets or private account tokens in app code. The current prototype's iframe sandbox is not yet suitable for untrusted third-party apps.
