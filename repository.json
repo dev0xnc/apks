@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.1.0",
-      "description": "Televisión en vivo, guía de programación y biblioteca multimedia.",
+      "version": "0.2.0",
+      "description": "TV por categorías y actualizador de canales argentinos.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
