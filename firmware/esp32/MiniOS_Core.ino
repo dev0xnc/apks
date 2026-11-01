@@ -87,7 +87,7 @@ footer{text-align:center;padding:20px;color:#70839e;font-size:12px}
 <button class="secondary" id="restartButton">Reiniciar MiniOS Core</button>
 </section>
 </main>
-<footer>MiniOS Core 1.1.0 · ESP32</footer>
+<footer>MiniOS Core 1.1.1 · ESP32</footer>
 <script>
 var authHeader = "";
 function showMessage(text) {
@@ -244,7 +244,7 @@ void handleStatus() {
   json += ",\"rssi\":" + String(connected ? WiFi.RSSI() : 0);
   json += ",\"freeHeap\":" + String(ESP.getFreeHeap());
   json += ",\"uptime\":" + String(millis() / 1000);
-  json += ",\"version\":\"1.1.0\"}";
+  json += ",\"version\":\"1.1.1\"}";
   sendJSON(200, json);
 }
 
