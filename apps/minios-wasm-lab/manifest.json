@@ -9,5 +9,11 @@
   "entry": "index.html",
   "icon": "",
   "permissions": [],
-  "minBrowser": null
+  "minBrowser": null,
+  "wasm": "module.wasm.b64",
+  "wasmFormat": "base64",
+  "wasmExport": "main",
+  "requires": [
+    "wasm"
+  ]
 }
