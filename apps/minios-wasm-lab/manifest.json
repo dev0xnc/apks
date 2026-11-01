@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "minios-wasm-lab",
+  "name": "MiniOS WebAssembly Lab",
+  "version": "1.0.0",
+  "description": "Prueba local de ejecución WebAssembly en el navegador.",
+  "author": "dev0xnc",
+  "runtime": "wasm-web",
+  "entry": "index.html",
+  "icon": "",
+  "permissions": [],
+  "minBrowser": null
+}
