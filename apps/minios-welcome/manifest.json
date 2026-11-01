@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "minios-welcome",
+  "name": "MiniOS Welcome",
+  "version": "1.0.0",
+  "description": "A simple welcome screen and system capability overview.",
+  "author": "dev0xnc",
+  "runtime": "web",
+  "entry": "index.html",
+  "icon": "",
+  "permissions": [],
+  "minBrowser": null
+}
