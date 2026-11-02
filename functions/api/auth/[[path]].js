@@ -75,7 +75,7 @@ export async function onRequest(context) {
   if (action === "register") {
     const email = String(body.email || "").trim().toLowerCase(), password = body.password;
     if (!validEmail(email) || typeof password !== "string" || password.length < 12 || password.length > 128) return json({ error: "invalid_email_or_password" }, 400);
-    if (!await rateLimit(request, env, email)) return json({ error: "rate_limited" }, 429);
+    if (!await rateLimit(request, env, email) || !await rateLimit(request, env, "ip-global")) return json({ error: "rate_limited" }, 429);
     const exists = await env.DB.prepare("SELECT id FROM users WHERE email=?").bind(email).first();
     if (exists) return json({ error: "registration_unavailable" }, 409);
     const id = randomId(16), salt = randomId(16), hash = await passwordHash(password, salt), now = Math.floor(Date.now() / 1000);
@@ -90,7 +90,7 @@ export async function onRequest(context) {
     if (!validEmail(email) || typeof password !== "string" || password.length > 128) return json({ error: "invalid_credentials" }, 400);
     if (!await rateLimit(request, env, email)) return json({ error: "rate_limited" }, 429);
     const user = await env.DB.prepare("SELECT id,email,password_hash,password_salt,status FROM users WHERE email=?").bind(email).first();
-    if (!user || user.status !== "active") return json({ error: "invalid_credentials" }, 401);
+    if (!user || user.status !== "active") { await passwordHash(password, "minios-tv-dummy-salt"); return json({ error: "invalid_credentials" }, 401); }
     const candidate = await passwordHash(password, user.password_salt);
     if (candidate !== user.password_hash) return json({ error: "invalid_credentials" }, 401);
     const token = await newSession(user.id, env);
