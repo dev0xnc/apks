@@ -4,7 +4,8 @@ const COOKIE = "minios_tv_session";
 
 function cookieValue(header, name) {
   const match = (header || "").match(new RegExp("(?:^|;\\s*)" + name + "=([^;]*)"));
-  if (!match) return "";\n  try { return decodeURIComponent(match[1]); } catch { return ""; }
+  if (!match) return "";
+  try { return decodeURIComponent(match[1]); } catch { return ""; }
 }
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
