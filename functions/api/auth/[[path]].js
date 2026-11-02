@@ -88,7 +88,7 @@ export async function onRequest(context) {
   if (action === "login") {
     const email = String(body.email || "").trim().toLowerCase(), password = body.password;
     if (!validEmail(email) || typeof password !== "string" || password.length > 128) return json({ error: "invalid_credentials" }, 400);
-    if (!await rateLimit(request, env, email)) return json({ error: "rate_limited" }, 429);
+    if (!await rateLimit(request, env, email) || !await rateLimit(request, env, "ip-global")) return json({ error: "rate_limited" }, 429);
     const user = await env.DB.prepare("SELECT id,email,password_hash,password_salt,status FROM users WHERE email=?").bind(email).first();
     if (!user || user.status !== "active") { await passwordHash(password, "minios-tv-dummy-salt"); return json({ error: "invalid_credentials" }, 401); }
     const candidate = await passwordHash(password, user.password_salt);
