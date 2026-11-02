@@ -262,7 +262,7 @@ main{padding:clamp(18px,3vw,42px);min-width:0;max-width:1500px;width:100%;margin
 .country-sport-card{gap:10px}.country-sport-card p{margin:0}.country-sport-card b{color:#e6f2ff}.country-sport-card .source-link{margin-top:0}.country-sport-card[hidden]{display:none!important}#officialSportsDirectory{align-items:stretch}#officialSportsDirectory .official-card{height:100%}</style>
 <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 </head><body>
-<a class="skip-link" href="#main-content">Saltar al contenido</a><header><div class="brand"><div class="logo">MINI<span>OS</span> / TV</div><span class="brand-tag">TU CENTRO MULTIMEDIA</span></div><a href="../../desktop/">← Escritorio MiniOS</a></header>
+<a class="skip-link" href="#main-content">Saltar al contenido</a><header><div class="brand"><div class="logo">MINI<span>OS</span> / TV</div><span class="brand-tag">TU CENTRO MULTIMEDIA</span></div><a href="../../desktop/">← Escritorio MiniOS</a><a id="adminLink" class="hidden" href="./admin.html">Administración</a></header>
 <div class="layout">
 <aside aria-label="Secciones de MiniOS TV"><button class="nav active" data-tab="live">📺 TV en vivo</button><button class="nav" data-tab="guide">🗓 Guía TV</button><button class="nav" data-tab="favorites">★ Favoritos</button><button class="nav" data-tab="sources">⚙ Fuentes</button></aside>
 <main id="main-content">
@@ -406,5 +406,7 @@ if($("countryFilter"))$("countryFilter").onchange=function(){selectedCountry=thi
 if($("search"))$("search").oninput=function(){renderChannels();};
 try{bindRegionFilters();}catch(e){console.warn("MiniOS TV: no se pudieron enlazar algunos filtros",e);}
 try{drawCategoryChips();render();}catch(e){console.error("MiniOS TV: error de inicialización",e);if($("status"))$("status").textContent="MiniOS TV inició con un error: "+(e&&e.message?e.message:"revisá la consola del navegador");}
+fetch("/api/auth/me",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.user&&d.user.role==="admin")$("adminLink").classList.remove("hidden");}).catch(()=>{});
+fetch("/api/channels",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(d=>{if(!d||!Array.isArray(d.channels))return;var seen=new Set(channels.map(x=>x.url));d.channels.forEach(x=>{if(x.url&&!seen.has(x.url)){channels.push(x);seen.add(x.url);}});renderChannels();}).catch(()=>{});
 })();
 </script></body></html>
