@@ -1,5 +1,5 @@
 const TV_PREFIX = "/apps/minios-tv";
-const LOGIN_PATH = TV_PREFIX + "/login.html";
+const LOGIN_PATH = TV_PREFIX + "/login";
 const COOKIE = "minios_tv_session";
 
 function cookieValue(header, name) {
@@ -34,7 +34,7 @@ export async function onRequest(context) {
     const headers = new Headers({ "Location": LOGIN_PATH, "Cache-Control": "no-store" });
     return new Response(null, { status: 302, headers });
   }
-  if (url.pathname === TV_PREFIX + "/admin.html" && user.role !== "admin") {
+  if ((url.pathname === TV_PREFIX + "/admin.html" || url.pathname === TV_PREFIX + "/admin") && user.role !== "admin") {
     return new Response("Forbidden", { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   const response = await next();
