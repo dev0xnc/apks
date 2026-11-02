@@ -43,8 +43,8 @@
     {
       "id": "minios-tv",
       "name": "MiniOS TV",
-      "version": "0.8.0",
-      "description": "Centro deportivo con fuentes oficiales gratuitas por país, TV en vivo y favoritos; sin secciones de películas ni series.",
+      "version": "0.9.0",
+      "description": "TV en vivo con categoría deportiva integrada y reproductor con fuentes alternativas.",
       "manifest": "apps/minios-tv/manifest.json"
     }
   ]
