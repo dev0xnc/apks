@@ -70,19 +70,43 @@ export async function onRequest(context) {
   }
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, { Allow: "GET,POST,OPTIONS" });
   if (!secureOrigin(request, env)) return json({ error: "invalid_origin" }, 403);
-  let body; try { body = await readBody(request); } catch { return json({ error: "invalid_request" }, 400); }
+  let body; try { body = await readBody(request); } catch (error) {
+    return json({ error: error && error.message === "payload_too_large" ? "payload_too_large" : "invalid_request" }, error && error.message === "payload_too_large" ? 413 : 400);
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_request" }, 400);
 
   if (action === "register") {
-    const email = String(body.email || "").trim().toLowerCase(), password = body.password;
-    if (!validEmail(email) || typeof password !== "string" || password.length < 12 || password.length > 128) return json({ error: "invalid_email_or_password" }, 400);
-    if (!await rateLimit(request, env, email) || !await rateLimit(request, env, "ip-global")) return json({ error: "rate_limited" }, 429);
-    const exists = await env.DB.prepare("SELECT id FROM users WHERE email=?").bind(email).first();
-    if (exists) return json({ error: "registration_unavailable" }, 409);
-    const id = randomId(16), salt = randomId(16), hash = await passwordHash(password, salt), now = Math.floor(Date.now() / 1000);
-    try { await env.DB.prepare("INSERT INTO users(id,email,password_hash,password_salt,role,status,created_at,updated_at) VALUES(?,?,?,?, 'user','active',?,?)").bind(id,email,hash,salt,now,now).run(); }
-    catch { return json({ error: "registration_unavailable" }, 409); }
-    const token = await newSession(id, env);
-    return json({ ok: true }, 201, { "Set-Cookie": cookie(token, SESSION_SECONDS) });
+    let stage = "validate";
+    const requestId = randomId(8);
+    try {
+      const email = String(body.email || "").trim().toLowerCase(), password = body.password;
+      if (!validEmail(email) || typeof password !== "string" || password.length < 12 || password.length > 128) return json({ error: "invalid_email_or_password" }, 400);
+      stage = "rate_limit";
+      if (!await rateLimit(request, env, email) || !await rateLimit(request, env, "ip-global")) return json({ error: "rate_limited" }, 429);
+      stage = "check_email";
+      const exists = await env.DB.prepare("SELECT id FROM users WHERE email=?").bind(email).first();
+      if (exists) return json({ error: "registration_unavailable" }, 409);
+      const id = randomId(16), salt = randomId(16);
+      stage = "password_hash";
+      const hashStarted = Date.now();
+      const hash = await passwordHash(password, salt);
+      const hashDurationMs = Date.now() - hashStarted;
+      const now = Math.floor(Date.now() / 1000);
+      stage = "create_user";
+      await env.DB.prepare("INSERT INTO users(id,email,password_hash,password_salt,role,status,created_at,updated_at) VALUES(?,?,?,?, 'user','active',?,?)").bind(id,email,hash,salt,now,now).run();
+      stage = "create_session";
+      const token = await newSession(id, env);
+      console.log("minios_auth_register_success", JSON.stringify({ requestId, hashDurationMs }));
+      return json({ ok: true }, 201, { "Set-Cookie": cookie(token, SESSION_SECONDS) });
+    } catch (error) {
+      console.error("minios_auth_register_failure", JSON.stringify({
+        requestId,
+        stage,
+        errorName: error && error.name ? String(error.name).slice(0, 80) : "UnknownError",
+        errorMessage: error && error.message ? String(error.message).slice(0, 240) : "No message"
+      }));
+      return json({ error: stage === "create_user" ? "registration_unavailable" : "registration_failed", request_id: requestId }, stage === "create_user" ? 409 : 500);
+    }
   }
 
   if (action === "login") {
