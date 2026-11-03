@@ -1,6 +1,6 @@
 const COOKIE = "minios_tv_session";
 const SESSION_SECONDS = 60 * 60 * 24 * 7;
-const PASSWORD_ITERATIONS = 310000;
+const PASSWORD_ITERATIONS = 100000;
 
 function json(data, status = 200, extra = {}) {
   return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...extra } });
