@@ -1,412 +1,113 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1424"><meta name="description" content="MiniOS TV: televisión en vivo y directorio de deportes oficiales gratuitos por país."><title>MiniOS TV 0.9.0</title>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#100b1d"><meta name="description" content="MiniOS TV: tu centro multimedia para canales y contenido autorizado.">
+<title>MiniOS TV</title><link rel="manifest" href="./manifest.json">
 <style>
-:root{
- color-scheme:dark;
- --bg:#080d17;--surface:#101a2a;--surface-2:#15243a;--surface-3:#1d304b;
- --line:#2b405b;--text:#f4f7fb;--muted:#a2b2c6;
- --accent:#70e1c6;--accent-strong:#36c7ad;--blue:#91baff;
- --good:#81e2b2;--warning:#ffd18a;--danger:#ffaaa9;
- --shadow:0 18px 50px #0005;--radius:18px;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
- margin:0;min-height:100vh;background:
- radial-gradient(ellipse at 72% -14%,#1d4960aa,transparent 38%),
- radial-gradient(ellipse at 3% 30%,#1a3151aa,transparent 32%),var(--bg);
- color:var(--text);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
-button,input,select{font:inherit}
-button,a,select,input{ -webkit-tap-highlight-color:transparent }
-button{touch-action:manipulation}
-.skip-link{position:absolute;left:12px;top:-60px;z-index:30;padding:10px 14px;background:var(--accent);color:#061b1a;border-radius:10px;font-weight:800}
-.skip-link:focus{top:10px}
-header{
- min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:18px;
- padding:12px clamp(16px,4vw,58px);position:sticky;top:0;z-index:20;
- background:#0b1424eF;border-bottom:1px solid #334961aa;backdrop-filter:blur(16px);
-}
-.brand{display:flex;align-items:center;gap:14px;min-width:0}
-.logo{font-weight:950;letter-spacing:.13em;font-size:1.03rem;white-space:nowrap}
-.logo span{color:var(--accent)}
-.brand-tag{color:var(--muted);font-size:.78rem;border-left:1px solid var(--line);padding-left:14px}
-header a{color:var(--muted);text-decoration:none;font-weight:700;padding:9px 13px;border:1px solid var(--line);border-radius:999px;white-space:nowrap}
-header a:hover{color:var(--text);border-color:var(--accent);background:#70e1c610}
-.layout{display:grid;grid-template-columns:232px minmax(0,1fr);max-width:1760px;margin:0 auto;min-height:calc(100vh - 72px)}
-aside{
- padding:18px 13px;border-right:1px solid #263951;background:#0b1424bb;
- position:sticky;top:72px;height:calc(100vh - 72px);overflow-y:auto;z-index:10;
-}
-.nav{
- display:flex;align-items:center;gap:11px;width:100%;min-height:48px;text-align:left;
- border:1px solid transparent;background:transparent;color:var(--muted);
- padding:11px 13px;border-radius:13px;margin:4px 0;cursor:pointer;font-weight:700;
- transition:background .18s ease,border-color .18s ease,color .18s ease;
-}
-.nav.active,.nav:hover{background:linear-gradient(110deg,#70e1c61b,#91baff12);color:var(--text);border-color:#70e1c64a}
-main{padding:clamp(18px,3vw,42px);min-width:0;max-width:1500px;width:100%;margin:0 auto}
-.hero{
- position:relative;overflow:hidden;isolation:isolate;
- background:linear-gradient(115deg,#153849 0%,#172c43 54%,#1c3150 100%);
- border:1px solid #3e6875;border-radius:24px;padding:clamp(22px,3vw,38px);
- margin-bottom:24px;box-shadow:var(--shadow);
-}
-.hero:after{
- content:"";position:absolute;z-index:-1;width:330px;height:330px;right:-105px;top:-170px;
- border:1px solid #70e1c64a;border-radius:50%;
- box-shadow:0 0 0 35px #70e1c610,0 0 0 75px #70e1c608;
-}
-.eyebrow{color:var(--accent);font-size:.73rem;letter-spacing:.17em;font-weight:900}
-.hero h1{font-size:clamp(1.8rem,4vw,3.15rem);line-height:1.08;margin:9px 0 10px;letter-spacing:-.04em}
-.hero .muted{max-width:760px;margin:0}
-.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
-.hero-pill{font-size:.74rem;font-weight:750;color:#c5eee5;border:1px solid #70e1c64a;background:#70e1c612;padding:5px 10px;border-radius:999px}
-.muted{color:var(--muted);line-height:1.6}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
-.input{
- background:#091321;color:var(--text);border:1px solid var(--line);border-radius:12px;
- padding:11px 13px;min-width:0;min-height:44px;outline:none;
-}
-.input:hover{border-color:#496785}
-.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #70e1c61c}
-.toolbar .input{flex:1;min-width:190px}
-.toolbar label{align-self:center}
-.btn{
- display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;
- background:var(--surface-2);color:var(--text);border:1px solid var(--line);
- border-radius:12px;padding:10px 15px;cursor:pointer;text-decoration:none;font-weight:750;
- transition:transform .16s ease,background .16s ease,border-color .16s ease;
-}
-.btn:hover{border-color:#70e1c6a8;background:#70e1c610;transform:translateY(-1px)}
-.btn:active{transform:translateY(0)}
-.btn.primary{background:var(--accent);color:#06201d;border-color:transparent;font-weight:900}
-.btn.primary:hover{background:#94f0dc}
-.btn:disabled{opacity:.6;cursor:wait;transform:none}
-.btn:focus-visible,.nav:focus-visible,.tile:focus-visible,.chip:focus-visible,a:focus-visible{
- outline:3px solid var(--accent);outline-offset:3px
-}
-.section{display:none;animation:sectionIn .2s ease}
-.section.active{display:block}
-@keyframes sectionIn{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:none}}
-.sectionhead{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
-.sectionhead h2{margin:0;font-size:clamp(1.35rem,2vw,1.8rem);letter-spacing:-.025em}
-.sectionhead p{margin:5px 0 0}
-.section h2{letter-spacing:-.02em}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:14px}
-.tile{
- width:100%;background:linear-gradient(145deg,#1a2c43,#111c2c);
- border:1px solid var(--line);border-radius:16px;padding:16px;text-align:left;
- color:var(--text);cursor:pointer;min-height:126px;
- transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
-}
-.tile:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 10px 26px #0003}
-.tile strong{display:block;margin:9px 0 4px;line-height:1.35}
-.tile small{color:var(--muted)}
-.logoimg{width:40px;height:40px;object-fit:contain;border-radius:10px;background:#fff2}
-.box{background:linear-gradient(145deg,#14243a,#101a2a);border:1px solid var(--line);border-radius:17px;padding:18px;margin:14px 0}
-.box h2{font-size:1.05rem;margin:0 0 10px}
-.box summary{cursor:pointer;font-weight:800}
-.channelrow{display:flex;align-items:center;gap:9px;min-width:0}
-.channelrow .tile{flex:1;min-width:0}
-.star{font-size:1.3rem;width:46px;min-width:46px;min-height:46px;padding:8px}
-.empty{padding:28px;border:1px dashed #405571;border-radius:16px;color:var(--muted);text-align:center;background:#101c2a8a;grid-column:1/-1}
-.hint{font-size:.84rem;color:var(--muted);line-height:1.5}
-.filterbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
-.filterbar select{min-width:155px;flex:1}
-.toolbar select{max-width:230px}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 16px;scrollbar-width:thin}
-.chip{
- white-space:nowrap;background:#111f32;color:var(--muted);border:1px solid var(--line);
- border-radius:999px;padding:8px 14px;min-height:38px;cursor:pointer;font-weight:700
-}
-.chip.active,.chip:hover{background:#70e1c61a;color:var(--text);border-color:var(--accent)}
-.countbadge{
- display:inline-flex;align-items:center;border:1px solid #70e1c64a;background:#70e1c612;
- color:#b8f2e4;border-radius:999px;padding:7px 12px;font-size:.82rem;font-weight:800
-}
-.moviecard{
- display:flex;flex-direction:column;gap:10px;background:linear-gradient(150deg,#1a2b43,#101a2a);
- border:1px solid var(--line);border-radius:17px;padding:17px;min-height:190px
-}
-.moviecard strong{font-size:1rem;line-height:1.4}
-.moviecard p{color:var(--muted);font-size:.85rem;margin:0;line-height:1.5}
-.moviecard a{margin-top:auto;color:var(--blue);text-decoration:none;font-weight:800}
-.moviecard a:hover{text-decoration:underline}
-.sourceLinks{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
-.player{
- display:none;background:linear-gradient(145deg,#111e30,#05080e);border:1px solid #42627f;
- border-radius:20px;overflow:hidden;margin:14px 0 26px;box-shadow:0 18px 55px #0008
-}
-.player.open{display:block}
-.playerstage{background:#000}
-.player video{
- display:block;width:100%;height:min(58vw,68vh);min-height:240px;max-height:75vh;
- aspect-ratio:16/9;object-fit:contain;background:#000
-}
-.playerinfo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 18px;background:#13243a}
-.player-title{min-width:0}
-.player-title strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.player-controls,.player-options{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:13px 16px;background:#0c1727}
-.player-controls button,.player-options button{
- background:#1b2e49;border:1px solid #3b567a;color:#eef5ff;border-radius:11px;
- padding:9px 13px;min-height:40px;cursor:pointer
-}
-.player-controls .playmain{background:var(--accent);color:#071c1a;font-weight:900}
-.player-controls input[type=range]{accent-color:var(--accent);min-width:70px;flex:1}
-.player-time{font-size:.82rem;color:#b9c9df;font-variant-numeric:tabular-nums}
-.player-status{font-size:.84rem;color:#a9bfd7;padding:0 16px 15px}
-.loadbox{
- background:#10213a;border:1px solid #36557d;border-radius:15px;padding:15px 17px;
- margin:-8px 0 22px;box-shadow:0 8px 28px #0003
-}
-.loadtop{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
-.loadtop span{color:#b9d5ff;font-weight:850;font-variant-numeric:tabular-nums}
-.progressTrack{height:11px;background:#07111f;border:1px solid #314969;border-radius:999px;overflow:hidden}
-.progressBar{height:100%;width:0;background:linear-gradient(90deg,#5d9cff,#82e0c2);border-radius:999px;transition:width .22s ease;position:relative;overflow:hidden}
-.progressBar.indeterminate{width:35%;animation:progressMove 1.2s ease-in-out infinite alternate}
-.progressBar.indeterminate:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#ffffff55,transparent);animation:shine 1s linear infinite}
-@keyframes progressMove{from{transform:translateX(0)}to{transform:translateX(185%)}}
-@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-#status{min-height:22px;color:var(--good);font-size:.9rem}
-.guideitem{display:grid;grid-template-columns:minmax(110px,180px) 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
-.guideitem:last-child{border:0}
-.danger{color:var(--danger)}
-.hidden{display:none!important}
-.football-intro{
- padding:18px 19px;border:1px solid #3b665f;background:linear-gradient(110deg,#112d32,#14243a);
- border-radius:17px;margin:16px 0
-}
-.football-intro strong{display:block;color:#c9f6e9;margin-bottom:3px}
-.official-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px;margin:14px 0 18px}
-.official-card{
- display:flex;flex-direction:column;align-items:flex-start;gap:11px;min-width:0;
- padding:18px;border:1px solid #334c64;border-radius:18px;
- background:linear-gradient(150deg,#192b43,#111c2c);box-shadow:0 10px 28px #0002
-}
-.official-card:hover{border-color:#70e1c67a}
-.source-top{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%}
-.source-icon{font-size:1.55rem;line-height:1}
-.source-tag{font-size:.69rem;letter-spacing:.04em;font-weight:900;padding:5px 8px;border-radius:999px;color:#c6f7e8;background:#70e1c61a;border:1px solid #70e1c64a}
-.source-tag.limited{color:#ffdfa7;background:#ffd18a12;border-color:#ffd18a45}
-.official-card h3{font-size:1.08rem;margin:0;line-height:1.3}
-.official-card p{color:var(--muted);font-size:.86rem;line-height:1.55;margin:0}
-.official-card .source-note{font-size:.77rem;color:#b6c8dc;border-top:1px solid var(--line);padding-top:9px;margin-top:auto;width:100%}
-.official-card .source-link{width:100%;margin-top:2px}
-.football-subhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:26px 0 8px}
-.football-subhead h3{margin:0;font-size:1.08rem}
-.legal-note{
- display:flex;gap:10px;align-items:flex-start;background:#1e2a34;border:1px solid #5b523b;
- border-radius:13px;padding:13px 15px;color:#dfd1b7;font-size:.82rem;line-height:1.5
-}
-.legal-note strong{color:#ffe0a4;white-space:nowrap}
-.page-footer{border-top:1px solid var(--line);margin-top:42px;padding:18px 2px 8px;color:var(--muted);font-size:.78rem;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.page-footer a{color:var(--blue);text-decoration:none}
-@media(min-width:1500px){
- .grid{grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:16px}
- .tile{min-height:142px;padding:18px}
- main{padding:42px clamp(38px,4vw,66px)}
-}
-@media(max-width:1020px){
- .layout{grid-template-columns:205px minmax(0,1fr)}
- main{padding:24px}
- .brand-tag{display:none}
-}
-@media(max-width:760px){
- .layout{grid-template-columns:minmax(0,1fr)}
- aside{
-  display:flex;overflow-x:auto;overflow-y:hidden;gap:5px;padding:8px 10px;
-  border-right:0;border-bottom:1px solid var(--line);position:sticky;top:72px;
-  height:auto;z-index:12;scrollbar-width:thin;background:#0b1424f5
- }
- .nav{white-space:nowrap;width:auto;min-width:max-content;min-height:43px;margin:0;padding:9px 12px}
- main{padding:20px 16px}
- .hero{padding:22px;border-radius:19px}
- .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}
- .official-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
- .player video{height:54vw;min-height:200px}
-}
-@media(max-width:520px){
- header{min-height:62px;padding:9px 13px}
- .layout{min-height:calc(100vh - 62px)}
- aside{top:62px}
- main{padding:17px 12px}
- .logo{font-size:.94rem}
- header a{font-size:.8rem;padding:8px 10px}
- .hero{padding:19px 16px;margin-bottom:18px}
- .hero h1{font-size:1.85rem}
- .toolbar{gap:8px}
- .toolbar .input{min-width:100%;width:100%}
- .toolbar select{max-width:none}
- .toolbar label{margin-top:2px}
- .btn{padding:10px 12px}
- .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
- .tile{padding:12px;min-height:115px}
- .official-grid{grid-template-columns:1fr}
- .official-card{padding:16px}
- .filterbar select{min-width:100%;width:100%}
- .filterbar{gap:8px}
- .player video{height:56vw;min-height:185px}
- .player-controls{gap:7px;padding:11px}
- .player-controls button{padding:8px 10px}
- .player-controls input[type=range]{min-width:75px}
- .playerinfo{align-items:flex-start;flex-direction:column}
- .guideitem{grid-template-columns:1fr;gap:3px}
- .countbadge{margin:3px 0}
- .legal-note{display:block}
- .legal-note strong{display:block;margin-bottom:3px}
-}
-@media(prefers-reduced-motion:reduce){
- *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
-}
-.country-sport-card{gap:10px}.country-sport-card p{margin:0}.country-sport-card b{color:#e6f2ff}.country-sport-card .source-link{margin-top:0}.country-sport-card[hidden]{display:none!important}#officialSportsDirectory{align-items:stretch}#officialSportsDirectory .official-card{height:100%}</style>
+:root{color-scheme:dark;--bg:#0b0812;--panel:#151020;--panel2:#20172e;--line:#382847;--text:#f7f1ff;--muted:#b8a9c7;--accent:#b58cff;--accent2:#e1c5ff;--good:#8ce0b8;--warn:#ffd28a;--bad:#ff9dba;--shadow:0 18px 55px #0007}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 80% -10%,#4c287055,transparent 36%),radial-gradient(ellipse at 0 35%,#28183d88,transparent 32%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select{font:inherit}button,a,input,select{touch-action:manipulation}button{cursor:pointer}.hidden{display:none!important}
+header{height:76px;position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px clamp(16px,4vw,54px);background:#100b1ded;backdrop-filter:blur(18px);border-bottom:1px solid #49345c}
+.brand{display:flex;align-items:center;gap:12px;font-weight:950;letter-spacing:.12em;font-size:1.1rem}.brand-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#d7b5ff,#8d5ad2);color:#1b1028;font-size:1.2rem;box-shadow:0 6px 22px #9b65d955}.brand span{color:var(--accent)}.header-actions{display:flex;gap:8px;align-items:center}.header-actions a,.header-actions button{color:var(--muted);text-decoration:none;background:#21172e;border:1px solid var(--line);border-radius:11px;padding:9px 13px;font-weight:750}
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);max-width:1800px;margin:auto;min-height:calc(100vh - 76px)}
+aside{position:sticky;top:76px;height:calc(100vh - 76px);overflow:auto;padding:20px 13px;border-right:1px solid #382847;background:#100b1dbb}
+.nav{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;margin:4px 0;border:1px solid transparent;border-radius:13px;background:transparent;color:var(--muted);text-align:left;font-weight:750;min-height:48px}.nav:hover,.nav.active{color:var(--text);border-color:#b58cff55;background:linear-gradient(100deg,#b58cff25,#8b58c00b)}.nav .ico{width:22px;text-align:center;font-size:1.15rem}
+main{min-width:0;width:100%;max-width:1500px;margin:auto;padding:clamp(18px,3vw,42px)}
+.hero{position:relative;overflow:hidden;padding:clamp(24px,4vw,46px);border:1px solid #74538d;border-radius:25px;background:linear-gradient(115deg,#38204e,#241735 58%,#211c3a);box-shadow:var(--shadow);margin-bottom:28px}.hero:after{content:"";position:absolute;width:340px;height:340px;border:1px solid #e4caff55;border-radius:50%;right:-90px;top:-190px;box-shadow:0 0 0 35px #e4caff10,0 0 0 75px #e4caff08;pointer-events:none}.eyebrow{color:#dfc5ff;font-size:.75rem;font-weight:900;letter-spacing:.18em}.hero h1{font-size:clamp(2rem,4vw,3.5rem);line-height:1.04;letter-spacing:-.045em;margin:10px 0}.hero p{max-width:720px;color:#d0c0dc;margin:0}.hero-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.pill{border:1px solid #d5b6ff55;background:#b58cff18;color:#e8d8ff;border-radius:999px;padding:6px 11px;font-size:.78rem;font-weight:800}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.input{min-height:44px;padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:#100b19;color:var(--text);outline:none}.input:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.toolbar .input[type=search]{flex:1;min-width:210px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:9px 14px;border:1px solid var(--line);border-radius:12px;background:#251a34;color:var(--text);font-weight:800;text-decoration:none}.btn:hover{border-color:var(--accent);background:#b58cff19}.btn.primary{background:var(--accent);color:#1c1029;border-color:transparent}.btn:disabled{opacity:.55;cursor:wait}
+.section{display:none;animation:appear .2s ease}.section.active{display:block}@keyframes appear{from{opacity:.6;transform:translateY(4px)}to{opacity:1;transform:none}}.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:15px}.sectionhead h2{margin:0;font-size:1.65rem;letter-spacing:-.03em}.muted,.hint{color:var(--muted)}.hint{font-size:.83rem}.filters,.chips{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.chip{border:1px solid var(--line);border-radius:999px;background:#1a1225;color:var(--muted);padding:8px 13px;font-weight:750}.chip.active,.chip:hover{color:var(--text);border-color:var(--accent);background:#b58cff20}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:15px}.card{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:17px;background:linear-gradient(150deg,#21172e,#151020);transition:transform .18s,border-color .18s;cursor:pointer}.card:hover,.card:focus-visible{transform:translateY(-3px);border-color:#b58cff}.poster{width:100%;aspect-ratio:2/3;display:grid;place-items:center;background:linear-gradient(145deg,#49315f,#1b1426);color:#d7baff;font-size:2.8rem;object-fit:cover}.cardbody{padding:12px}.cardbody strong{display:block;line-height:1.3}.cardbody small{display:block;color:var(--muted);margin-top:5px}.cardactions{display:flex;gap:7px;padding:0 12px 12px}.cardactions button{flex:1;min-width:0}.empty{grid-column:1/-1;text-align:center;padding:30px;border:1px dashed #59436c;border-radius:16px;color:var(--muted);background:#171020aa}
+.panel{padding:18px;margin:14px 0;background:linear-gradient(145deg,#1c1428,#151020);border:1px solid var(--line);border-radius:17px}.panel h3{margin:0 0 8px}.panel p{color:var(--muted)}.stat{display:inline-flex;padding:6px 10px;border:1px solid #b58cff55;background:#b58cff18;border-radius:999px;color:#e4d1ff;font-size:.8rem;font-weight:800}
+.player{display:none;margin:18px 0 28px;overflow:hidden;border:1px solid #74538d;border-radius:19px;background:#08060c;box-shadow:var(--shadow)}.player.open{display:block}.stage{background:#000}.stage video{display:block;width:100%;height:min(65vw,70vh);min-height:220px;max-height:78vh;object-fit:contain;background:#000}.playerbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 17px;background:#1b1326}.playercontrols,.playeroptions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 15px;background:#120d1b}.playercontrols button,.playeroptions button{background:#281d36;color:var(--text);border:1px solid #59436c;border-radius:10px;padding:9px 12px;min-height:40px}.playercontrols .primary{background:var(--accent);color:#1c1029}.playercontrols input{accent-color:var(--accent)}.playercontrols #seek{flex:1;min-width:80px}.playerstatus{padding:0 16px 13px;color:var(--muted);font-size:.84rem}
+.formrow{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}.formrow .input{flex:1;min-width:180px}.notice{padding:12px 14px;border-radius:12px;background:#2a2033;border:1px solid #665044;color:#e9d6bd;font-size:.84rem}.status{min-height:24px;color:var(--good);font-size:.88rem}.footer{margin-top:40px;padding:18px 0;border-top:1px solid var(--line);color:var(--muted);font-size:.8rem}
+@media(max-width:850px){.shell{grid-template-columns:1fr}aside{position:sticky;top:76px;height:auto;display:flex;overflow-x:auto;padding:8px;border-right:0;border-bottom:1px solid var(--line);z-index:20}.nav{white-space:nowrap;width:auto;min-width:max-content;margin:0}.nav .ico{width:auto}main{padding:20px 15px}}
+@media(max-width:560px){header{height:64px;padding:8px 12px}.shell{min-height:calc(100vh - 64px)}aside{top:64px}.brand{font-size:.9rem}.brand-mark{width:36px;height:36px}.header-actions a{font-size:.78rem;padding:8px}.hero{padding:22px 18px;border-radius:19px}.hero h1{font-size:2rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.cardbody{padding:9px}.cardactions{padding:0 9px 9px}.cardactions .btn{font-size:.76rem;padding:7px}.stage video{height:56vw;min-height:190px}.playerbar{align-items:flex-start;flex-direction:column}.toolbar .input[type=search]{min-width:100%}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
 <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
-</head><body>
-<a class="skip-link" href="#main-content">Saltar al contenido</a><header><div class="brand"><div class="logo">MINI<span>OS</span> / TV</div><span class="brand-tag">TU CENTRO MULTIMEDIA</span></div><a href="../../desktop/">← Escritorio MiniOS</a><a id="adminLink" class="hidden" href="./admin.html">Administración</a></header>
-<div class="layout">
-<aside aria-label="Secciones de MiniOS TV"><button class="nav active" data-tab="live">📺 TV en vivo</button><button class="nav" data-tab="guide">🗓 Guía TV</button><button class="nav" data-tab="favorites">★ Favoritos</button><button class="nav" data-tab="sources">⚙ Fuentes</button></aside>
-<main id="main-content">
-<section class="hero"><div class="eyebrow">MINIOS TV · 0.9.0</div><h1>El fútbol y el deporte, en un solo lugar.</h1><p class="muted">Fuentes oficiales gratuitas, señales deportivas y plataformas organizadas por país. También podés explorar TV en vivo y favoritos.</p><div class="hero-meta"><span class="hero-pill">⚽ Fútbol por país</span><span class="hero-pill">📺 TV en vivo</span><span class="hero-pill">🌎 Fuentes oficiales</span></div><div class="toolbar"><input id="search" class="input" type="search" aria-label="Buscar contenido" placeholder="Buscar canales y deportes…"><label class="hint" for="searchTimeout">Tiempo máx.</label><select id="searchTimeout" class="input"><option value="15000">15 s</option><option value="30000" selected>30 s</option><option value="60000">60 s</option><option value="120000">120 s</option></select><button class="btn" id="stop">Detener</button></div></section><section id="loadProgress" class="loadbox hidden" role="status" aria-live="polite"><div class="loadtop"><strong id="loadLabel">Preparando búsqueda…</strong><span id="loadPercent">0%</span></div><div class="progressTrack"><div id="loadBar" class="progressBar"></div></div><div id="loadDetail" class="hint">Conectando con las fuentes…</div></section>
-<section class="player" id="player"><div class="playerstage"><video id="video" playsinline preload="metadata"></video></div><div class="playerinfo"><div class="player-title"><strong id="nowTitle">MiniOS Player</strong><div class="hint" id="playStatus">Elegí contenido para reproducir.</div></div><button class="btn" id="closePlayer">Cerrar ✕</button></div><div class="player-controls"><button class="playmain" id="togglePlay">▶ Reproducir</button><button id="back10">↶ 10 s</button><button id="forward10">10 s ↷</button><span class="player-time" id="timeCurrent">00:00</span><input id="seek" type="range" min="0" max="1000" value="0"><span class="player-time" id="timeTotal">--:--</span><button id="mute">🔊</button><input id="volume" type="range" min="0" max="1" step="0.05" value="1"><button id="fullscreen">⛶</button></div><div class="player-options" id="playerOptions"></div><div class="player-status" id="playerHint">Los controles dependen del formato y de las capacidades de la fuente.</div></section>
-<section class="section active" id="live"><div class="sectionhead"><div><h2>Canales de TV</h2><p class="muted">Catálogo internacional organizado por temática y país.</p></div><button class="btn primary" id="refreshArgentina">⟳ Buscar canales</button></div><div class="filterbar"><select id="continentFilter" class="input"><option value="all">🌎 Todos los continentes</option><option value="SA">Sudamérica</option><option value="NA">Norteamérica</option><option value="CA">Centroamérica y Caribe</option><option value="EU">Europa</option><option value="AF">África</option><option value="AS">Asia</option><option value="OC">Oceanía</option></select><select id="countryFilter" class="input"><option value="all">Todos los países</option></select><span id="channelCount" class="countbadge">0 canales</span></div><div id="updated" class="hint">Actualizá el catálogo para cargar los canales disponibles.</div><div id="categoryChips" class="chips"></div><div id="channels" class="grid"></div></section>
-<section class="section" id="guide"><h2>Guía de programación</h2><p class="muted">La guía se completa cuando importás un archivo XMLTV compatible.</p><div id="guideList" class="box"><div class="empty">Todavía no hay una guía cargada.</div></div></section>
-
-
-<section class="section" id="favorites"><h2>Tus favoritos</h2><div id="favoriteList" class="grid"></div></section>
-<section class="section" id="sources">
-<h2>Administrar fuentes</h2>
-<div class="box"><h2>Importar lista M3U / M3U8</h2><p class="hint">Cargá una lista que tengas autorización para utilizar. Se admiten archivos locales o URLs públicas accesibles desde el navegador.</p><div class="toolbar"><input id="m3uFile" class="input" type="file" accept=".m3u,.m3u8,text/plain"><input id="m3uUrl" class="input" type="url" placeholder="https://servidor/lista.m3u"><button class="btn primary" id="importM3u">Importar URL</button></div><button class="btn" id="clearChannels">Borrar canales importados</button></div>
-<div class="box"><h2>Importar guía XMLTV</h2><p class="hint">La guía relaciona programas y horarios con los canales mediante tvg-id cuando está disponible.</p><div class="toolbar"><input id="xmlFile" class="input" type="file" accept=".xml,.xmltv,text/xml"><input id="xmlUrl" class="input" type="url" placeholder="https://servidor/guia.xml"><button class="btn primary" id="importXml">Importar URL</button></div><button class="btn" id="clearGuide">Borrar guía</button></div>
-<div class="box"><h2>Estado</h2><div id="status" aria-live="polite">Listo para importar fuentes.</div><p class="hint">Las listas y favoritos se guardan localmente en este navegador. No se envían al ESP32 ni a MiniOS. Las URLs pueden contener credenciales: no compartas capturas o listas que las expongan.</p></div>
-</section>
-<footer class="page-footer"><span>MiniOS TV · 0.7.0</span><span>Usá únicamente fuentes que tengas autorización para ver. <a href="../../desktop/">Volver al escritorio</a></span></footer><footer class="page-footer"><span>MiniOS TV · 0.9.0</span><span>Fuentes oficiales; disponibilidad sujeta a derechos y territorio. <a href="../../desktop/">Volver al escritorio</a></span></footer></main></div>
+</head>
+<body>
+<header><div class="brand"><div class="brand-mark">M</div><div>MINI<span>OS</span> TV</div></div><div class="header-actions"><a href="../../desktop/">← MiniOS</a><a id="adminLink" class="hidden" href="./admin.html">Administración</a></div></header>
+<div class="shell">
+<aside aria-label="Navegación principal">
+<button class="nav active" data-tab="home"><span class="ico">⌂</span>Inicio</button>
+<button class="nav" data-tab="live"><span class="ico">▣</span>TV en vivo</button>
+<button class="nav" data-tab="movies"><span class="ico">▰</span>Películas</button>
+<button class="nav" data-tab="series"><span class="ico">▤</span>Series</button>
+<button class="nav" data-tab="favorites"><span class="ico">♡</span>Mi lista</button>
+<button class="nav" data-tab="history"><span class="ico">◷</span>Historial</button>
+<button class="nav" data-tab="sources"><span class="ico">⚙</span>Fuentes</button>
+<button class="nav" data-tab="settings"><span class="ico">☷</span>Ajustes</button>
+</aside>
+<main id="main">
+<section class="hero"><div class="eyebrow">TU CENTRO MULTIMEDIA</div><h1>Todo lo que querés ver.<br>En un solo lugar.</h1><p>Canales, películas y series en una experiencia simple, rápida y preparada para tu televisor.</p><div class="hero-tags"><span class="pill">✦ Interfaz para TV</span><span class="pill">▶ Reproductor integrado</span><span class="pill">⌘ Control remoto</span></div><div class="toolbar"><input id="globalSearch" class="input" type="search" placeholder="Buscar canales, películas o series…" aria-label="Buscar contenido"><button class="btn" id="searchGo">Buscar</button></div></section>
+<section class="player" id="player"><div class="stage"><video id="video" playsinline preload="metadata" controls></video></div><div class="playerbar"><div><strong id="nowTitle">MiniOS Player</strong><div id="playStatus" class="hint">Elegí algo para reproducir.</div></div><button class="btn" id="closePlayer">Cerrar ✕</button></div><div class="playercontrols"><button class="primary" id="togglePlay">▶ / II</button><button id="back10">↶ 10 s</button><button id="forward10">10 s ↷</button><span id="currentTime" class="hint">00:00</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Posición"><span id="duration" class="hint">--:--</span><button id="mute">🔊</button><input id="volume" type="range" min="0" max="1" step=".05" value="1" aria-label="Volumen"><button id="fullscreen">⛶ Pantalla completa</button></div><div class="playeroptions" id="playerOptions"></div><div class="playerstatus" id="playerHint">La compatibilidad depende del navegador, formato, CORS y permisos de la fuente.</div></section>
+<section id="home" class="section active"><div class="sectionhead"><div><h2>Explorá MiniOS TV</h2><div class="muted">Tu contenido, organizado.</div></div></div><div class="grid">
+<article class="card" data-goto="live"><div class="poster">📺</div><div class="cardbody"><strong>TV en vivo</strong><small>Canales y señales autorizadas</small></div></article>
+<article class="card" data-goto="movies"><div class="poster">🎬</div><div class="cardbody"><strong>Películas</strong><small>Catálogo de dominio público</small></div></article>
+<article class="card" data-goto="series"><div class="poster">📚</div><div class="cardbody"><strong>Series</strong><small>Contenido de acceso público</small></div></article>
+<article class="card" data-goto="favorites"><div class="poster">♡</div><div class="cardbody"><strong>Mi lista</strong><small>Tus favoritos guardados</small></div></article>
+</div><div class="panel"><h3>Empezá por tus fuentes</h3><p>Importá una lista M3U autorizada o cargá canales desde el panel de administración. También podés explorar películas de dominio público.</p><button class="btn primary" data-goto="sources">Configurar fuentes</button> <button class="btn" data-goto="movies">Explorar películas</button></div><div class="notice">MiniOS TV no incluye señales de TV paga ni garantiza que un enlace externo esté disponible. Usá fuentes oficiales o con autorización.</div></section>
+<section id="live" class="section"><div class="sectionhead"><div><h2>TV en vivo</h2><p class="muted">Tus canales importados y administrados.</p></div><button class="btn primary" id="reloadChannels">⟳ Actualizar</button></div><div class="filters"><input id="channelSearch" class="input" type="search" placeholder="Filtrar canales…"><select id="channelCategory" class="input"><option value="all">Todas las categorías</option><option>general</option><option>sports</option><option>news</option><option>entertainment</option></select><span class="stat" id="channelCount">0 canales</span></div><div id="channels" class="grid"></div></section>
+<section id="movies" class="section"><div class="sectionhead"><div><h2>Películas</h2><p class="muted">Catálogo consultado en Internet Archive. Revisá la ficha y licencia de cada obra.</p></div><button class="btn primary" id="loadMovies">⟳ Explorar catálogo</button></div><div class="filters"><input id="movieSearch" class="input" type="search" placeholder="Buscar películas…"><span id="movieCount" class="stat">Catálogo sin cargar</span></div><div id="movieGrid" class="grid"><div class="empty">Presioná “Explorar catálogo” para cargar películas de dominio público.</div></div></section>
+<section id="series" class="section"><div class="sectionhead"><div><h2>Series y episodios</h2><p class="muted">Búsqueda de materiales públicos catalogados.</p></div><button class="btn primary" id="loadSeries">⟳ Explorar catálogo</button></div><div class="filters"><input id="seriesSearch" class="input" type="search" placeholder="Buscar series…"><span id="seriesCount" class="stat">Catálogo sin cargar</span></div><div id="seriesGrid" class="grid"><div class="empty">Presioná “Explorar catálogo” para buscar series y episodios públicos.</div></div></section>
+<section id="favorites" class="section"><div class="sectionhead"><div><h2>Mi lista</h2><p class="muted">Contenido guardado en este dispositivo.</p></div></div><div id="favoriteGrid" class="grid"></div></section>
+<section id="history" class="section"><div class="sectionhead"><div><h2>Historial</h2><button class="btn" id="clearHistory">Limpiar historial</button></div></div><div id="historyGrid" class="grid"></div></section>
+<section id="sources" class="section"><h2>Fuentes y listas</h2><div class="panel"><h3>Importar lista M3U / M3U8</h3><p>Importá un archivo local o una URL HTTPS de una lista que tengas derecho a utilizar.</p><div class="formrow"><input id="m3uFile" class="input" type="file" accept=".m3u,.m3u8,text/plain"><input id="m3uUrl" class="input" type="url" placeholder="https://tu-servidor/lista.m3u"><button class="btn primary" id="importUrl">Importar URL</button></div><button class="btn" id="clearImported">Borrar canales importados</button></div><div class="panel"><h3>Guía de programación XMLTV</h3><p>Opcional: importá un archivo XMLTV para consultar la programación.</p><div class="formrow"><input id="xmlFile" class="input" type="file" accept=".xml,.xmltv,text/xml"></div><div id="guideStatus" class="hint">No hay guía cargada.</div></div><div class="panel"><h3>Canales administrados</h3><p>Los canales agregados por el administrador aparecen automáticamente al actualizar.</p><button class="btn" id="syncServer">Sincronizar canales del servidor</button></div><div id="sourceStatus" class="status" role="status"></div></section>
+<section id="settings" class="section"><h2>Ajustes</h2><div class="panel"><h3>Experiencia</h3><label><input type="checkbox" id="autoPlay"> Reproducir automáticamente cuando el navegador lo permita</label><p class="hint">Algunos televisores y navegadores requieren iniciar la reproducción con OK o Enter.</p><label for="motion">Animaciones</label><select id="motion" class="input"><option value="normal">Normales</option><option value="reduced">Reducidas</option></select></div><div class="panel"><h3>Almacenamiento</h3><p id="storageInfo" class="muted">Tus favoritos, historial y canales importados se guardan en este navegador.</p><button class="btn" id="clearLocal">Borrar datos locales</button></div><div class="panel"><h3>Atajos de control remoto</h3><p>Flechas: moverse entre elementos · OK/Enter: seleccionar · Escape/Backspace: volver o cerrar reproductor · Espacio: pausar/continuar · F: pantalla completa.</p></div><div class="notice">Los enlaces de reproducción se cargan directamente desde el proveedor. MiniOS TV no elimina restricciones regionales, suscripciones ni controles de acceso.</div></section>
+<footer class="footer">MiniOS TV · Aplicación web · Diseñada para navegador, computadora y TV Box.</footer>
+</main></div>
 <script>
-(function(){
-"use strict";
-var $=function(id){return document.getElementById(id)};
-function readStore(key,fallback){try{var raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback;}catch(e){console.warn("MiniOS TV: almacenamiento local ilegible",key,e);return fallback;}}
-function writeStore(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch(e){console.warn("MiniOS TV: no se pudo guardar",key,e);return false;}}
-var channels=readStore("minios_tv_channels",[]),guide=readStore("minios_tv_guide",[]),favorites=readStore("minios_tv_favorites",[]),media=readStore("minios_tv_media",{movies:[],series:[]}),movieCatalog=[],hls=null,currentUrl=null,objectUrls=[],currentAlternatives=[];
-if(!Array.isArray(channels))channels=[];
-if(!Array.isArray(guide))guide=[];
-if(!Array.isArray(favorites))favorites=[];
-if(!media||typeof media!=="object")media={movies:[],series:[]};
-if(!Array.isArray(media.movies))media.movies=[];
-if(!Array.isArray(media.series))media.series=[];
-channels=channels.filter(x=>x&&typeof x==="object");
-guide=guide.filter(x=>x&&typeof x==="object");
-media.movies=media.movies.filter(x=>x&&typeof x==="object"&&!String(x.url||"").startsWith("blob:"));
-media.series=media.series.filter(x=>x&&typeof x==="object"&&!String(x.url||"").startsWith("blob:"));
-function save(){writeStore("minios_tv_channels",channels);writeStore("minios_tv_favorites",favorites);writeStore("minios_tv_guide",guide);writeStore("minios_tv_media",media);}
-function say(t){$("status").textContent=t;}
-function searchTimeout(){return Number($("searchTimeout")&&$("searchTimeout").value)||30000;}
-async function timedFetch(url,options){var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},searchTimeout());try{return await fetch(url,Object.assign({},options||{},{signal:controller.signal}));}finally{clearTimeout(timer);}}
-function progressStart(label,detail){var box=$("loadProgress"),bar=$("loadBar");box.classList.remove("hidden");$("loadLabel").textContent=label;$("loadDetail").textContent=detail||"Conectando con las fuentes…";$("loadPercent").textContent="";bar.style.width="35%";bar.classList.add("indeterminate");}
-function progressUpdate(percent,label,detail){var bar=$("loadBar");bar.classList.remove("indeterminate");bar.style.width=Math.max(0,Math.min(100,percent))+"%";$("loadPercent").textContent=Math.round(percent)+"%";if(label)$("loadLabel").textContent=label;if(detail)$("loadDetail").textContent=detail;}
-function progressEnd(detail){progressUpdate(100,"Proceso finalizado",detail||"Listo.");setTimeout(function(){$("loadProgress").classList.add("hidden");$("loadBar").style.width="0%";},1300);}
-function showTab(id){document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));render();}
-document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
-function parseM3U(text){
-var lines=text.replace(/^\uFEFF/,"").split(/\r?\n/),out=[],meta=null;
-lines.forEach(function(raw){var line=raw.trim();if(!line)return;if(line.indexOf("#EXTINF:")===0){var comma=line.indexOf(","),attrs=line.slice(8,comma<0?undefined:comma),name=comma<0?"Canal":line.slice(comma+1).trim(),get=function(k){var m=attrs.match(new RegExp(k+'="([^"]*)"'));return m?m[1]:"";};meta={name:name||"Canal",id:get("tvg-id"),logo:get("tvg-logo"),group:get("group-title")||"General"};}else if(line[0]!=="#"){if(/^https?:\/\//i.test(line)&&meta){out.push({id:meta.id||line,name:meta.name,url:line,logo:meta.logo,group:meta.group});meta=null;}}});
-return out;
-}
-function importM3UText(text){progressStart("Procesando lista de canales…","Analizando entradas M3U.");var parsed=parseM3U(text);if(!parsed.length){say("No se encontraron canales válidos. Revisá el formato M3U.");progressEnd("No se encontraron canales.");return;}channels=parsed;save();say(parsed.length+" canales importados correctamente.");render();progressEnd(parsed.length+" canales importados.");}
-$("m3uFile").onchange=async function(){var f=this.files[0];if(f)importM3UText(await f.text());};
-$("importM3u").onclick=async function(){var u=$("m3uUrl").value.trim();if(!/^https?:\/\//i.test(u)){say("Ingresá una URL HTTP o HTTPS válida.");return;}try{var r=await fetch(u);if(!r.ok)throw Error("HTTP "+r.status);importM3UText(await r.text());}catch(e){say("No se pudo leer la lista. El servidor puede bloquear CORS o requerir acceso: "+e.message);}};
-function safeLogo(url){return /^https?:\/\//i.test(url||"")?url:"";}
-function tile(item,kind){var b=document.createElement("button");b.className="tile";b.type="button";if(item.logo){var im=document.createElement("img");im.className="logoimg";im.src=safeLogo(item.logo);im.alt="";im.loading="lazy";im.decoding="async";im.onerror=function(){im.remove();};b.appendChild(im);}else{var ic=document.createElement("div");ic.textContent=kind==="channel"?"📺":kind==="series"?"▣":"🎬";b.appendChild(ic);}var strong=document.createElement("strong");strong.textContent=item.name||"Sin título";var small=document.createElement("small");small.textContent=item.group||item.category||kind;b.appendChild(strong);b.appendChild(small);b.onclick=function(){if(kind==="channel"&&item.source==="iptv-org"&&paidSportsNames.test(item.name||item.baseName||"")){showPlayerMessage(item.name||item.baseName,"Esta señal requiere acceso mediante el proveedor o la aplicación oficial; no tiene una URL pública reproducible.");return;}var alts=kind==="channel"&&item.baseName?channels.filter(x=>x.baseName===item.baseName&&x.url).map(x=>({name:x.name,url:x.url})):[];play(item.url,item.name,alts.length?alts:[{name:item.name,url:item.url}]);};return b;}
-function renderChannels(){
-var q=$("search").value.toLowerCase(),region=$("continentFilter").value,country=$("countryFilter").value,list=channels.filter(x=>(x.name+" "+x.group).toLowerCase().includes(q)&&regionMatch(x,region)&&(country==="all"||x.country===country)&&(selectedCategory==="all"||(x.categories||[]).includes(selectedCategory)));$("channels").innerHTML="";if(!list.length){$("channels").innerHTML='<div class="empty">No hay canales. Importá una lista M3U desde Fuentes.</div>';return;}
-list.forEach(function(ch){var wrap=document.createElement("div");wrap.className="channelrow";wrap.appendChild(tile(ch,"channel"));var star=document.createElement("button");star.className="btn star";star.textContent=favorites.includes(ch.url)?"★":"☆";star.title="Agregar o quitar favorito";star.onclick=function(){favorites=favorites.includes(ch.url)?favorites.filter(x=>x!==ch.url):favorites.concat(ch.url);save();render();};wrap.appendChild(star);$("channels").appendChild(wrap);});
-}
-function renderMedia(type){var target=$(type==="movies"?"movieList":"seriesList");target.innerHTML="";var list=media[type]||[];if(!list.length){target.innerHTML='<div class="empty">Todavía no agregaste contenido.</div>';return;}list.forEach(function(x){target.appendChild(tile(x,type));});}
-function renderFavorites(){var target=$("favoriteList");target.innerHTML="";var list=channels.filter(x=>favorites.includes(x.url));if(!list.length){target.innerHTML='<div class="empty">Todavía no guardaste favoritos.</div>';return;}list.forEach(x=>target.appendChild(tile(x,"channel")));}
-function renderGuide(){var target=$("guideList");target.innerHTML="";if(!guide.length){target.innerHTML='<div class="empty">Todavía no hay una guía cargada.</div>';return;}var now=Date.now(),shown=0;guide.filter(p=>new Date(p.stop).getTime()>now).sort((a,b)=>new Date(a.start)-new Date(b.start)).slice(0,100).forEach(function(p){var row=document.createElement("div");row.className="guideitem";var time=document.createElement("strong");time.textContent=new Date(p.start).toLocaleString();var desc=document.createElement("div");var title=document.createElement("strong");title.textContent=p.title;var sub=document.createElement("div");sub.className="hint";sub.textContent=p.channel+" · hasta "+new Date(p.stop).toLocaleTimeString();desc.appendChild(title);desc.appendChild(sub);row.appendChild(time);row.appendChild(desc);target.appendChild(row);shown++;});if(!shown)target.innerHTML='<div class="empty">No hay programas próximos en la guía.</div>';}
-function render(){[["TV",renderChannels],["Favoritos",renderFavorites],["Guía",renderGuide]].forEach(function(job){try{job[1]();}catch(e){console.error("MiniOS TV: error en "+job[0],e);say("No se pudo actualizar "+job[0]+": "+(e&&e.message?e.message:"error desconocido"));}});}
-function play(url,name,alternatives){
- if(!url){showPlayerMessage(name||"Canal","Esta ficha no contiene una señal reproducible.");return;}
- var v=$("video");currentAlternatives=(alternatives||[{name:name,url:url}]).filter((x,i,a)=>x&&x.url&&a.findIndex(y=>y.url===x.url)===i);
- if(!currentAlternatives.some(x=>x.url===url))currentAlternatives.unshift({name:name||"Fuente principal",url:url});
- currentAlternativeIndex=Math.max(0,currentAlternatives.findIndex(x=>x.url===url));
- $("player").classList.add("open");$("player").scrollIntoView({behavior:"smooth",block:"start"});$("playerOptions").innerHTML="";
- currentAlternatives.forEach(function(src,i){var b=document.createElement("button");b.textContent="Fuente "+(i+1);b.title=src.name||("Fuente "+(i+1));b.onclick=function(){startAlternative(i);};$("playerOptions").appendChild(b);});
- $("playerHint").textContent=currentAlternatives.length>1?"Si una fuente falla, MiniOS probará automáticamente la siguiente.":"No hay una fuente alternativa conocida para este canal.";
- function startAlternative(index){
-  if(index>=currentAlternatives.length){$("playStatus").textContent="No se pudo reproducir ninguna fuente. Puede estar caída, bloqueada por región o no permitir reproducción integrada.";return;}
-  currentAlternativeIndex=index;var src=currentAlternatives[index];if(hls){hls.destroy();hls=null;}v.pause();v.removeAttribute("src");v.load();currentUrl=src.url;
-  $("nowTitle").textContent=name||src.name||"Canal";$("playStatus").textContent="Probando fuente "+(index+1)+" de "+currentAlternatives.length+"…";
-  $("playerOptions").querySelectorAll("button").forEach((b,i)=>b.disabled=i===index);
-  var failed=false;function fallback(){if(failed)return;failed=true;if(hls){hls.destroy();hls=null;}$("playStatus").textContent="La fuente falló. Probando otra…";setTimeout(()=>startAlternative(index+1),300);}
-  var start=function(){v.play().then(()=>$("playStatus").textContent="Reproduciendo · Fuente "+(index+1)).catch(()=>$("playStatus").textContent="Fuente cargada. Presioná Reproducir si el navegador bloqueó el inicio automático.");};
-  v.onerror=fallback;var isHls=/\.m3u8($|\?)/i.test(src.url);
-  if(isHls&&v.canPlayType("application/vnd.apple.mpegurl")){v.src=src.url;v.load();start();}
-  else if(isHls&&window.Hls&&Hls.isSupported()){hls=new Hls({enableWorker:true});hls.on(Hls.Events.MEDIA_ATTACHED,()=>hls.loadSource(src.url));hls.on(Hls.Events.MANIFEST_PARSED,start);hls.on(Hls.Events.ERROR,function(_,data){if(data.fatal)fallback();});hls.attachMedia(v);}
-  else{v.src=src.url;v.load();start();}
- }
- startAlternative(currentAlternativeIndex);
-}
-function showPlayerMessage(name,message){$("player").classList.add("open");$("player").scrollIntoView({behavior:"smooth",block:"start"});$("nowTitle").textContent=name;$("playStatus").textContent=message;$("playerHint").textContent="MiniOS no incluye ni proporciona accesos a señales de TV paga.";$("playerOptions").innerHTML="";}
-function timeFmt(t){if(!Number.isFinite(t))return "--:--";var hh=Math.floor(t/3600),mm=Math.floor(t%3600/60),ss=Math.floor(t%60);return hh?String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0"):String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0");}
-var playerVideo=$("video");
-$("togglePlay").onclick=function(){if(playerVideo.paused)playerVideo.play().catch(()=>{});else playerVideo.pause();};
-$("back10").onclick=function(){playerVideo.currentTime=Math.max(0,playerVideo.currentTime-10);};
-$("forward10").onclick=function(){if(Number.isFinite(playerVideo.duration))playerVideo.currentTime=Math.min(playerVideo.duration,playerVideo.currentTime+10);};
-$("mute").onclick=function(){playerVideo.muted=!playerVideo.muted;$("mute").textContent=playerVideo.muted?"🔇":"🔊";};
-$("volume").oninput=function(){playerVideo.volume=Number(this.value);playerVideo.muted=playerVideo.volume===0;$("mute").textContent=playerVideo.muted?"🔇":"🔊";};
-$("seek").oninput=function(){if(Number.isFinite(playerVideo.duration)&&playerVideo.duration>0)playerVideo.currentTime=Number(this.value)/1000*playerVideo.duration;};
-$("fullscreen").onclick=function(){var p=$("player");if(document.fullscreenElement){document.exitFullscreen&&document.exitFullscreen();return;}if(p.requestFullscreen)p.requestFullscreen().catch(()=>{if(playerVideo.webkitEnterFullscreen)playerVideo.webkitEnterFullscreen();});else if(playerVideo.webkitEnterFullscreen)playerVideo.webkitEnterFullscreen();};
-$("closePlayer").onclick=function(){playerVideo.pause();if(hls){hls.destroy();hls=null;}playerVideo.removeAttribute("src");playerVideo.load();$("player").classList.remove("open");};
-$("stop").onclick=function(){playerVideo.pause();playerVideo.currentTime=0;};
-document.addEventListener("fullscreenchange",function(){$("fullscreen").textContent=document.fullscreenElement?"⛶ Salir":"⛶";});
-playerVideo.addEventListener("play",function(){$("togglePlay").textContent="Ⅱ Pausar";$("playStatus").textContent="Reproduciendo";});
-playerVideo.addEventListener("pause",function(){$("togglePlay").textContent="▶ Reproducir";if(playerVideo.currentTime>0)$("playStatus").textContent="En pausa";});
-playerVideo.addEventListener("timeupdate",function(){$("timeCurrent").textContent=timeFmt(playerVideo.currentTime);$("timeTotal").textContent=timeFmt(playerVideo.duration);if(Number.isFinite(playerVideo.duration)&&playerVideo.duration>0)$("seek").value=Math.round(playerVideo.currentTime/playerVideo.duration*1000);});
-playerVideo.addEventListener("loadedmetadata",function(){$("timeTotal").textContent=timeFmt(playerVideo.duration);});
-playerVideo.addEventListener("waiting",function(){$("playStatus").textContent="Cargando…";});
-playerVideo.addEventListener("error",function(){$("playStatus").textContent="No se pudo reproducir. Probá otra fuente o revisá compatibilidad/CORS.";});
-bindRegionFilters();
-function addMedia(type,url,name){if(!url)return;media[type].push({name:name||"Contenido agregado",url:url,category:type});save();render();say("Contenido agregado a "+(type==="movies"?"Películas":"Series")+".");}
-
-
-function parseXml(text){var xml=new DOMParser().parseFromString(text,"application/xml");if(xml.querySelector("parsererror"))throw Error("El XML no es válido.");var out=[];xml.querySelectorAll("programme").forEach(function(p){var start=p.getAttribute("start"),stop=p.getAttribute("stop"),channel=p.getAttribute("channel"),title=p.querySelector("title");if(start&&stop&&title){function date(s){return new Date(s.slice(0,4)+"-"+s.slice(4,6)+"-"+s.slice(6,8)+"T"+s.slice(8,10)+":"+s.slice(10,12)+":"+s.slice(12,14)+"Z").toISOString();}try{out.push({start:date(start),stop:date(stop),channel:channel,title:title.textContent});}catch(e){}}});return out;}
-function importXmlText(t){progressStart("Procesando guía de TV…","Leyendo programación XMLTV.");try{guide=parseXml(t);save();say(guide.length+" programas importados en la guía.");renderGuide();progressEnd(guide.length+" programas procesados.");}catch(e){say("No se pudo importar XMLTV: "+e.message);progressEnd("No se pudo procesar el archivo.");}}
-$("xmlFile").onchange=async function(){var f=this.files[0];if(f)importXmlText(await f.text());};
-$("importXml").onclick=async function(){var u=$("xmlUrl").value.trim();if(!/^https?:\/\//i.test(u)){say("Ingresá una URL válida.");return;}try{var r=await fetch(u);if(!r.ok)throw Error("HTTP "+r.status);importXmlText(await r.text());}catch(e){say("No se pudo leer XMLTV. Puede ser un bloqueo CORS: "+e.message);}};
-$("clearChannels").onclick=function(){if(confirm("¿Borrar todos los canales importados?")){channels=[];favorites=[];save();render();say("Canales eliminados.");}};
-$("clearGuide").onclick=function(){guide=[];save();renderGuide();say("Guía eliminada.");};
-$("search").oninput=renderChannels;
-
-var selectedCategory="all",selectedCountry="all",selectedMovieCategory="all",seriesCatalog=[];
-var categoryMap=[["all","Todos"],["news","Noticias"],["sports","Deportes"],["entertainment","Entretenimiento"],["kids","Infantiles"],["documentary","Documentales"],["music","Música"],["general","General"]];
-var footballTerms=/f[uú]tbol|football|soccer|espn|tnt\s*sports|tyc|fox\s*sports|directv\s*sports|sport|deporte|liga|fifa|uefa|conmebol/i;
-var paidSportsNames=/^(?:espn(?:\s+(?:hd|premium|\d+))?|tnt\s*sports(?:\s+(?:hd|premium|\d+))?|tyc\s*sports(?:\s+(?:hd|premium|\d+))?|fox\s*sports(?:\s+(?:hd|premium|\d+))?|directv\s*sports|dsports)(?:\s*\([^)]*\))?$/i;
-var movieCategories=[["all","Todas"],["documentary","Documentales"],["comedy","Comedia"],["drama","Drama"],["animation","Animación"],["family","Familia"],["history","Historia"],["science","Ciencia"],["adventure","Aventura"]];
-function drawCategoryChips(){var el=$("categoryChips");if(!el)return;el.innerHTML="";categoryMap.forEach(function(c){var count=c[0]==="all"?channels.filter(x=>selectedCountry==="all"||x.country===selectedCountry).length:channels.filter(x=>(selectedCountry==="all"||x.country===selectedCountry)&&(x.categories||[]).includes(c[0])).length;var b=document.createElement("button");b.className="chip"+(selectedCategory===c[0]?" active":"");b.textContent=c[1]+" · "+count;b.onclick=function(){selectedCategory=c[0];drawCategoryChips();renderChannels();};el.appendChild(b);});}
-function drawMovieChips(){var el=$("movieCategoryChips");if(!el)return;el.innerHTML="";movieCategories.forEach(function(c){var n=c[0]==="all"?movieCatalog.length:movieCatalog.filter(x=>x.category===c[0]).length;var b=document.createElement("button");b.className="chip"+(selectedMovieCategory===c[0]?" active":"");b.textContent=c[1]+" · "+n;b.onclick=function(){selectedMovieCategory=c[0];drawMovieChips();renderMovieCatalog();};el.appendChild(b);});}
-function movieCategoryFor(doc){var s=((doc.title||"")+" "+(doc.subject||[]).join(" ")).toLowerCase();if(/documentary|documental/.test(s))return "documentary";if(/comedy|comed(y|ia)|humor/.test(s))return "comedy";if(/animation|animated|cartoon|animaci/.test(s))return "animation";if(/family|children|familia|infantil/.test(s))return "family";if(/history|historical|historia/.test(s))return "history";if(/science|scientific|ciencia/.test(s))return "science";if(/adventure|aventura/.test(s))return "adventure";return "drama";}
-var continentCountries={SA:"AR BO BR CL CO EC GY PY PE SR UY VE GF".split(" "),NA:"CA US MX GL BM".split(" "),CA:"BZ CR SV GT HN NI PA AG BS BB CU DM DO GD HT JM KN LC VC TT PR".split(" "),EU:"AL AD AT BY BE BA BG HR CY CZ DK EE FI FR DE GR HU IS IE IT XK LV LI LT LU MT MC ME NL MK NO PL PT RO RU SM RS SK SI ES SE CH UA GB VA".split(" "),AF:"DZ AO BJ BW BF BI CV CM CF TD KM CG CD CI DJ EG GQ ER SZ ET GA GM GH GN GW KE LS LR LY MG MW ML MR MU MA MZ NA NE NG RW ST SN SC SL SO ZA SS SD TZ TG TN UG ZM ZW".split(" "),AS:"AF AM AZ BH BD BT BN KH CN GE IN ID IR IQ IL JP JO KZ KW KG LA LB MY MV MN MM NP KP OM PK PS PH QA SA SG KR LK SY TW TJ TH TL TR TM AE UZ VN YE".split(" "),OC:"AU FJ KI MH FM NR NZ PW PG WS SB TO TV VU".split(" ")};
-function continentOf(code){code=String(code||"").toUpperCase();for(var k in continentCountries)if(continentCountries[k].includes(code))return k;return "unknown";}
-function regionMatch(item,region){var code=item.country||item.countryCode;if(!code)return true;return region==="all"||!region||continentOf(code)===region;}
-function countryName(code){var e=$("countryFilter"),o=e&&Array.from(e.options).find(x=>x.value===code);return o?o.textContent.replace(/^\S+\s/,""):code||"Internacional";}
-function populateCountries(list){["countryFilter"].forEach(function(id){var e=$(id);if(!e)return;var old=e.value;e.innerHTML='<option value="all">Todos los países</option>';list.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(function(c){var o=document.createElement("option");o.value=c.code;o.textContent=(c.flag||"")+" "+c.name;e.appendChild(o);});if(Array.from(e.options).some(x=>x.value===old))e.value=old;});}
-function bindRegionFilters(){var a=$("continentFilter"),b=$("countryFilter");if(a)a.onchange=renderChannels;if(b)b.onchange=renderChannels;}
-async function playArchiveItem(item){var id=item.identifier;$("player").classList.add("open");$("player").scrollIntoView({behavior:"smooth",block:"start"});$("nowTitle").textContent=item.title||id;$("playStatus").textContent="Buscando archivo compatible…";progressStart("Preparando reproducción…","Consultando los archivos de la ficha pública.");try{var r=await timedFetch("https://archive.org/metadata/"+encodeURIComponent(id));if(!r.ok)throw Error("HTTP "+r.status);var meta=await r.json();var files=(meta.files||[]).filter(x=>x.name&&/\.(mp4|m4v|webm|ogv)$/i.test(x.name)).sort((a,b)=>(/\.mp4$/i.test(b.name)?4:/\.webm$/i.test(b.name)?3:1)-(/\.mp4$/i.test(a.name)?4:/\.webm$/i.test(a.name)?3:1));if(!files.length)throw Error("No se encontró un archivo de vídeo compatible.");var opts=files.slice(0,4).map(x=>({name:x.name,url:"https://archive.org/download/"+encodeURIComponent(id)+"/"+x.name}));play(opts[0].url,item.title||id,opts);progressEnd("Reproductor listo.");}catch(e){$("playStatus").textContent="No hay un archivo reproducible en esta ficha: "+e.message;$("playerHint").textContent="Podés abrir la ficha original para comprobar formatos y licencia.";progressEnd("No se pudo preparar el vídeo.");}}
-function renderSeriesCatalog(){var target=$("seriesCatalog");if(!target)return;target.innerHTML="";var q=($("search").value||"").toLowerCase();var groups=new Map();seriesCatalog.forEach(function(x){var k=(x.title||x.identifier||"").toLowerCase().replace(/[^a-z0-9áéíóúüñ]+/g," ").trim();if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);});var list=Array.from(groups.values()).filter(g=>(g[0].title||g[0].identifier).toLowerCase().includes(q)&&regionMatch(g[0],$("seriesContinent").value)&&($("seriesCountry").value==="all"||g[0].country===$("seriesCountry").value));$("seriesCount").textContent=list.length+" series";if(!list.length){target.innerHTML='<div class="empty">Todavía no hay series. Presioná “Buscar series”.</div>';return;}list.forEach(function(g){var card=document.createElement("article");card.className="moviecard";var title=document.createElement("strong");title.textContent=g[0].title||g[0].identifier;var info=document.createElement("p");info.textContent="Dominio público · "+g.length+" fuente(s)";var links=document.createElement("div");links.className="sourceLinks";var pb=document.createElement("button");pb.className="btn primary";pb.textContent="▶ Reproducir";pb.onclick=function(){playArchiveItem(g[0]);};links.appendChild(pb);g.slice(0,5).forEach(function(x,i){var a=document.createElement("a");a.href="https://archive.org/details/"+encodeURIComponent(x.identifier);a.target="_blank";a.rel="noopener noreferrer";a.textContent="Ficha (O"+(i+1)+")";links.appendChild(a);});card.append(title,info,links);target.appendChild(card);});}
-function renderMovieCatalog(){var target=$("movieList");if(!target)return;target.innerHTML="";var q=($("search").value||"").toLowerCase(),region=$("movieContinent").value,country=$("movieCountry").value,list=movieCatalog.filter(x=>(selectedMovieCategory==="all"||x.category===selectedMovieCategory)&&(x.title+" "+(x.creator||"")+" "+(x.description||"")).toLowerCase().includes(q)&&regionMatch(x,region)&&(country==="all"||x.country===country));var groups=new Map();list.forEach(function(x){var key=(x.title||x.identifier).toLowerCase().replace(/[^a-z0-9áéíóúüñ]+/g," ").trim();if(!groups.has(key))groups.set(key,[]);groups.get(key).push(x);});var manual=(selectedMovieCategory==="all"?media.movies.filter(x=>(x.name||"").toLowerCase().includes(q)):[]);$("movieCount").textContent=(groups.size+manual.length)+" películas en esta categoría";if(!groups.size&&!manual.length){target.innerHTML='<div class="empty">No hay resultados en esta categoría. Probá otra o actualizá el catálogo.</div>';return;}groups.forEach(function(g){var m=g[0],card=document.createElement("article");card.className="moviecard";var badge=document.createElement("span");badge.className="hint";badge.textContent="DOMINIO PÚBLICO · INTERNET ARCHIVE";var title=document.createElement("strong");title.textContent=m.title||m.identifier;var meta=document.createElement("p");meta.textContent=[m.creator,m.year,m.categoryLabel].filter(Boolean).join(" · ");var desc=document.createElement("p");desc.textContent=(m.description||"").slice(0,170);var links=document.createElement("div");links.className="sourceLinks";var pb=document.createElement("button");pb.className="btn primary";pb.textContent="▶ Reproducir";pb.onclick=function(){playArchiveItem(g[0]);};links.appendChild(pb);g.slice(0,5).forEach(function(x,i){var a=document.createElement("a");a.href="https://archive.org/details/"+encodeURIComponent(x.identifier);a.target="_blank";a.rel="noopener noreferrer";a.textContent="Ficha (O"+(i+1)+")";links.appendChild(a);});card.append(badge,title,meta,desc,links);target.appendChild(card);});manual.forEach(function(x){target.appendChild(tile(x,"movies"));});}
-function drawCategoryChips(){var el=$("categoryChips");if(!el)return;el.innerHTML="";categoryMap.forEach(function(c){var b=document.createElement("button");b.className="chip"+(selectedCategory===c[0]?" active":"");b.textContent=c[1];b.onclick=function(){selectedCategory=c[0];drawCategoryChips();renderChannels();};el.appendChild(b);});}
-renderChannels=function(){var q=$("search").value.toLowerCase(),region=$("continentFilter").value,country=$("countryFilter").value,list=channels.filter(function(x){return(selectedCategory==="all"||(x.categories||[]).includes(selectedCategory))&&regionMatch(x,region)&&(country==="all"||x.country===country)&&(x.name+" "+(x.group||"")).toLowerCase().includes(q);});$("channelCount").textContent=list.length+" canales";$("channels").innerHTML="";if(!list.length){$("channels").innerHTML='<div class="empty">No hay canales en esta categoría o país. Elegí otro filtro o actualizá el catálogo.</div>';return;}list.forEach(function(ch){var wrap=document.createElement("div");wrap.className="channelrow";wrap.appendChild(tile(ch,"channel"));var star=document.createElement("button");star.className="btn star";star.textContent=favorites.includes(ch.url)?"★":"☆";star.onclick=function(){favorites=favorites.includes(ch.url)?favorites.filter(x=>x!==ch.url):favorites.concat(ch.url);save();render();};wrap.appendChild(star);$("channels").appendChild(wrap);});};
-async function updateArgentina(){var b=$("refreshArgentina");b.disabled=true;b.textContent="Buscando…";progressStart("Buscando cientos de canales…","Descargando canales, señales, logos, países y lista de exclusión.");say("Consultando el catálogo internacional…");try{var base="https://iptv-org.github.io/api/",names=["canales","señales","logos","países","bloqueos"];var endpoints=["channels.json","streams.json","logos.json","countries.json","blocklist.json"];var data=[];for(var i=0;i<endpoints.length;i++){progressUpdate((i/endpoints.length)*80,"Descargando "+names[i]+"…",(i+1)+" de "+endpoints.length+" fuentes consultadas.");var r=await timedFetch(base+endpoints[i],{cache:"no-store"});if(!r.ok)throw Error("No se pudo descargar "+endpoints[i]+" (HTTP "+r.status+").");data.push(await r.json());}progressUpdate(85,"Organizando catálogo…","Filtrando señales y eliminando duplicados.");var catalog=data[0],streams=data[1],logos=data[2],countries=data[3],blocklist=new Set(data[4].map(x=>x.channel));var logoMap=new Map();logos.filter(x=>x.in_use).forEach(x=>{if(!logoMap.has(x.channel))logoMap.set(x.channel,x.url);});var byId=new Map();catalog.filter(c=>!c.is_nsfw&&!c.closed&&!blocklist.has(c.id)).forEach(c=>byId.set(c.id,c));var grouped=new Map();streams.forEach(function(s){var c=byId.get(s.channel);if(!c||!s.url||!/^https:\/\//i.test(s.url)||!/\.(m3u8|mp4|webm|m4v|ogv)(?:$|[?#])/i.test(s.url))return;var score=(/m3u8/i.test(s.url)?4:0)+(s.quality?2:0)+(s.labels&&s.labels.includes("Geo-blocked")?-3:0)+(s.labels&&s.labels.includes("Not 24/7")?-1:0);if(!grouped.has(s.channel))grouped.set(s.channel,[]);grouped.get(s.channel).push({stream:s,score:score});});var imported=[];grouped.forEach(function(options,id){var c=byId.get(id);options.sort((a,b)=>b.score-a.score);if(paidSportsNames.test(c.name)){imported.push({id:id,name:c.name,url:"",logo:logoMap.get(id)||"",categories:["sports"],group:"Deportes",country:c.country||"",countryName:(countries.find(x=>x.code===c.country)||{}).name||countryName(c.country),source:"iptv-org",officialOnly:true,availability:"official-app"});return;}options.slice(0,3).forEach(function(option,index){var s=option.stream;imported.push({id:id+"-"+index,name:(s.title||c.name)+(options.length>1?" (O"+(index+1)+")":""),baseName:c.name,url:s.url,logo:logoMap.get(id)||"",categories:Array.isArray(c.categories)&&c.categories.length?c.categories:["general"],group:(c.categories||["general"]).join(", "),country:c.country||"",countryName:(countries.find(x=>x.code===c.country)||{}).name||countryName(c.country),source:"iptv-org",quality:s.quality||"",labels:s.labels||[]});});});if(!imported.length)throw Error("La fuente no devolvió canales reproducibles.");progressUpdate(95,"Guardando catálogo…",imported.length+" canales únicos encontrados en "+countries.length+" países.");var custom=channels.filter(x=>x.source!=="iptv-org");channels=custom.concat(imported);save();populateCountries(countries);selectedCountry=$("countryFilter").value;$("updated").textContent="Actualizado: "+new Date().toLocaleString()+" · "+imported.length+" canales de "+countries.length+" países.";say(imported.length+" canales cargados. Se excluyeron canales NSFW, cerrados o bloqueados. El catálogo es comunitario.");selectedCategory="all";drawCategoryChips();renderChannels();progressEnd(imported.length+" canales listos para explorar.");}catch(e){say("No se pudo actualizar: "+e.message+" (puede ser un bloqueo de red o CORS).");progressEnd("La búsqueda no pudo completarse.");}finally{b.disabled=false;b.textContent="⟳ Buscar canales";}}
-async function updateMovies(){var b=$("refreshMovies");b.disabled=true;b.textContent="Buscando…";progressStart("Buscando cientos de películas…","Consultando varias categorías en Internet Archive.");$("movieUpdated").textContent="Buscando hasta 250 resultados por categoría…";var specs=[["documentary","documentary"],["comedy","comedy"],["drama","drama"],["animation","animation"],["family","family"],["history","history"],["science","science"],["adventure","adventure"]];try{var completed=0,results=await Promise.all(specs.map(async function(spec){var q='mediatype:movies AND licenseurl:http*creativecommons.org/publicdomain* AND subject:'+spec[1];var params=new URLSearchParams();params.set("q",q);params.set("output","json");params.set("rows","250");["identifier","title","creator","year","description","subject","licenseurl","country"].forEach(function(field){params.append("fl[]",field);});params.append("sort[]","downloads desc");var url="https://archive.org/advancedsearch.php?"+params.toString();var r=await timedFetch(url);if(!r.ok)throw Error("Internet Archive respondió HTTP "+r.status);var j=await r.json();completed++;progressUpdate((completed/specs.length)*85,"Buscando películas…",completed+" de "+specs.length+" categorías consultadas; hasta 250 resultados por categoría.");return {category:spec[0],docs:(j.response&&j.response.docs)||[]};}));progressUpdate(90,"Quitando duplicados…","Combinando resultados de las ocho categorías.");var map=new Map();results.forEach(function(group){group.docs.forEach(function(d){if(!d.identifier||!String(d.licenseurl||"").toLowerCase().includes("publicdomain"))return;var old=map.get(d.identifier);if(!old){d.category=group.category;d.categoryLabel=movieCategories.find(x=>x[0]===group.category)[1];map.set(d.identifier,d);}else if(old.category==="drama"&&group.category!=="drama"){old.category=group.category;old.categoryLabel=movieCategories.find(x=>x[0]===group.category)[1];}});});movieCatalog=Array.from(map.values());if(!movieCatalog.length)throw Error("No se encontraron películas con licencia pública verificable en los resultados.");progressUpdate(97,"Preparando biblioteca…",movieCatalog.length+" películas únicas encontradas.");drawMovieChips();renderMovieCatalog();$("movieUpdated").textContent="Actualizado: "+new Date().toLocaleString()+" · "+movieCatalog.length+" títulos únicos. Hasta 250 resultados por categoría consultados.";say("Catálogo de películas actualizado. Verificá la ficha y licencia de cada título en Internet Archive.");progressEnd(movieCatalog.length+" películas listas para explorar.");}catch(e){$("movieUpdated").textContent="No se pudo cargar el catálogo: "+e.message;say("Error al buscar películas: "+e.message);progressEnd("La búsqueda de películas no pudo completarse.");}finally{b.disabled=false;b.textContent="⟳ Buscar películas";}}
-if($("refreshArgentina"))$("refreshArgentina").onclick=updateArgentina;
-
-async function updateSeries(){var b=$("refreshSeries");b.disabled=true;b.textContent="Buscando…";progressStart("Buscando series…","Consultando títulos de dominio público.");try{var qs=["mediatype:movies AND licenseurl:http*creativecommons.org/publicdomain* AND (subject:television OR subject:tv OR subject:series)","mediatype:movies AND licenseurl:http*creativecommons.org/publicdomain* AND subject:episode"];var all=[];for(var i=0;i<qs.length;i++){var p=new URLSearchParams();p.set("q",qs[i]);p.set("output","json");p.set("rows","250");["identifier","title","creator","year","description","subject","licenseurl","country"].forEach(x=>p.append("fl[]",x));var r=await timedFetch("https://archive.org/advancedsearch.php?"+p.toString());if(!r.ok)throw Error("Internet Archive HTTP "+r.status);var j=await r.json();(j.response&&j.response.docs||[]).forEach(function(x){if(x.identifier&&String(x.licenseurl||"").toLowerCase().includes("publicdomain"))all.push(x);});progressUpdate((i+1)/qs.length*85,"Buscando series…",(i+1)+" de "+qs.length+" consultas.");}var seen=new Set();seriesCatalog=all.filter(x=>{if(seen.has(x.identifier))return false;seen.add(x.identifier);return true;});renderSeriesCatalog();$("seriesUpdated").textContent="Actualizado: "+new Date().toLocaleString()+" · "+seriesCatalog.length+" resultados. Verificá la licencia de cada ficha.";progressEnd(seriesCatalog.length+" resultados listos.");}catch(e){$("seriesUpdated").textContent="No se pudo cargar: "+e.message;progressEnd("La búsqueda no pudo completarse.");}finally{b.disabled=false;b.textContent="⟳ Buscar series";}}
-
-if($("countryFilter"))$("countryFilter").onchange=function(){selectedCountry=this.value;drawCategoryChips();renderChannels();};
-if($("search"))$("search").oninput=function(){renderChannels();};
-try{bindRegionFilters();}catch(e){console.warn("MiniOS TV: no se pudieron enlazar algunos filtros",e);}
-try{drawCategoryChips();render();}catch(e){console.error("MiniOS TV: error de inicialización",e);if($("status"))$("status").textContent="MiniOS TV inició con un error: "+(e&&e.message?e.message:"revisá la consola del navegador");}
-fetch("/api/auth/me",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.user&&d.user.role==="admin")$("adminLink").classList.remove("hidden");}).catch(()=>{});
-fetch("/api/channels",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(d=>{if(!d||!Array.isArray(d.channels))return;var seen=new Set(channels.map(x=>x.url));d.channels.forEach(x=>{if(x.url&&!seen.has(x.url)){channels.push(x);seen.add(x.url);}});renderChannels();}).catch(()=>{});
+(()=>{"use strict";
+const $=id=>document.getElementById(id), STORE="minios_tv_v1_";
+const read=(k,d)=>{try{return JSON.parse(localStorage.getItem(STORE+k))??d}catch{return d}},write=(k,v)=>{try{localStorage.setItem(STORE+k,JSON.stringify(v));return true}catch{return false}};
+let channels=read("channels",[]),favorites=read("favorites",[]),history=read("history",[]),movieItems=[],seriesItems=[],xmlPrograms=[],hls=null,activeItem=null,settings=read("settings",{autoPlay:false,motion:"normal"});
+function persist(){write("channels",channels);write("favorites",favorites);write("history",history);write("settings",settings)}
+function status(t){$("sourceStatus").textContent=t}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function section(id){document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));if(id==="favorites")renderFavorites();if(id==="history")renderHistory();if(id==="live")renderChannels()}
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>section(b.dataset.tab)));
+document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>section(b.dataset.goto)));
+function itemKey(x){return x.key||x.url||x.identifier||x.name}
+function isFav(x){return favorites.some(f=>f.key===itemKey(x))}
+function toggleFav(x){const k=itemKey(x);favorites=isFav(x)?favorites.filter(f=>f.key!==k):[{key:k,name:x.name||x.title||"Contenido",url:x.url||"",identifier:x.identifier||"",kind:x.kind||"channel",poster:x.poster||""},...favorites];persist();renderFavorites();renderChannels()}
+function card(x,kind){const a=document.createElement("article");a.className="card";a.tabIndex=0;const poster=document.createElement("div");poster.className="poster";if(x.poster){const im=document.createElement("img");im.className="poster";im.src=x.poster;im.alt="";im.loading="lazy";im.onerror=()=>im.replaceWith(document.createTextNode("🎬"));poster.replaceWith(im);a.append(im)}else{poster.textContent=kind==="channel"?"📺":kind==="series"?"📚":"🎬";a.append(poster)}const body=document.createElement("div");body.className="cardbody";const title=document.createElement("strong");title.textContent=x.name||x.title||"Sin título";const meta=document.createElement("small");meta.textContent=x.meta||x.group||x.categoryLabel||kind;body.append(title,meta);a.append(body);const actions=document.createElement("div");actions.className="cardactions";const play=document.createElement("button");play.className="btn primary";play.textContent="▶ Ver";play.onclick=()=>openItem(x,kind);const fav=document.createElement("button");fav.className="btn";fav.textContent=isFav(x)?"♥":"♡";fav.title="Agregar o quitar de Mi lista";fav.onclick=()=>toggleFav({...x,kind});actions.append(play,fav);a.append(actions);a.addEventListener("keydown",e=>{if(e.key==="Enter")openItem(x,kind)});return a}
+function renderChannels(){const q=$("channelSearch").value.toLowerCase(),cat=$("channelCategory").value,list=channels.filter(x=>(x.name+" "+(x.group||"")+" "+(x.country||"")).toLowerCase().includes(q)&&(cat==="all"||x.group===cat||x.category===cat));$("channelCount").textContent=list.length+" canales";const root=$("channels");root.replaceChildren();if(!list.length){root.innerHTML='<div class="empty">No hay canales cargados. Importá una lista M3U o sincronizá el catálogo del administrador.</div>';return}list.forEach(x=>root.append(card(x,"channel")))}
+function renderFavorites(){const root=$("favoriteGrid");root.replaceChildren();if(!favorites.length){root.innerHTML='<div class="empty">Todavía no agregaste contenido a Mi lista.</div>';return}favorites.forEach(x=>root.append(card(x,x.kind||"channel")))}
+function renderHistory(){const root=$("historyGrid");root.replaceChildren();if(!history.length){root.innerHTML='<div class="empty">Todavía no hay reproducciones recientes.</div>';return}history.forEach(x=>root.append(card(x,x.kind||"channel")))}
+function parseM3U(text){const out=[];let meta=null;text.replace(/^\uFEFF/,"").split(/\r?\n/).forEach(line=>{line=line.trim();if(line.startsWith("#EXTINF:")){const comma=line.indexOf(","),attrs=line.slice(8,comma<0?undefined:comma),get=k=>(attrs.match(new RegExp(k+'="([^"]*)"','i'))||[])[1]||"";meta={name:comma<0?"Canal":line.slice(comma+1).trim(),logo:get("tvg-logo"),group:get("group-title")||"General",country:get("tvg-country")};}else if(line&&!line.startsWith("#")&&/^https?:\/\//i.test(line)&&meta){out.push({id:line,name:meta.name,url:line,logo:meta.logo,group:meta.group,country:meta.country,kind:"channel"});meta=null}});return out}
+function importM3U(text){const found=parseM3U(text);if(!found.length)throw Error("No se encontraron entradas válidas en el archivo M3U.");channels=found;persist();renderChannels();status(found.length+" canales importados correctamente.")}
+$("m3uFile").onchange=async e=>{try{if(e.target.files[0])importM3U(await e.target.files[0].text())}catch(err){status(err.message)}};
+$("importUrl").onclick=async()=>{const u=$("m3uUrl").value.trim();if(!/^https:\/\//i.test(u)){status("Usá una URL HTTPS válida.");return}try{const r=await fetch(u);if(!r.ok)throw Error("HTTP "+r.status);importM3U(await r.text())}catch(e){status("No se pudo importar: "+e.message+". El servidor puede bloquear CORS.")}};
+$("clearImported").onclick=()=>{if(confirm("¿Borrar los canales guardados en este navegador?")){channels=[];persist();renderChannels();status("Canales locales eliminados.")}};
+$("channelSearch").oninput=renderChannels;$("channelCategory").onchange=renderChannels;
+async function syncChannels(){const b=$("reloadChannels");b.disabled=true;try{const r=await fetch("/api/channels",{credentials:"same-origin",cache:"no-store"});if(!r.ok)throw Error(r.status===401?"Iniciá sesión nuevamente.":"HTTP "+r.status);const d=await r.json();if(!Array.isArray(d.channels))throw Error("Respuesta de canales inválida.");const local=channels.filter(x=>x.source!=="admin"),server=d.channels.map(x=>({...x,kind:"channel",source:"admin"}));channels=[...local,...server];persist();renderChannels();status(server.length+" canales administrados sincronizados.")}catch(e){status("No se pudieron sincronizar los canales: "+e.message)}finally{b.disabled=false}}
+$("reloadChannels").onclick=syncChannels;$("syncServer").onclick=syncChannels;
+function formatTime(n){if(!Number.isFinite(n))return "--:--";const h=Math.floor(n/3600),m=Math.floor(n%3600/60),s=Math.floor(n%60);return h?String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
+function openPlayer(url,title,kind){const v=$("video");if(hls){hls.destroy();hls=null}v.pause();v.removeAttribute("src");v.load();activeItem={url,title,kind};$("player").classList.add("open");$("nowTitle").textContent=title;$("playStatus").textContent="Preparando reproducción…";$("playerOptions").replaceChildren();const isHls=/\.m3u8(?:$|[?#])/i.test(url);if(isHls&&v.canPlayType("application/vnd.apple.mpegurl")){v.src=url}else if(isHls&&window.Hls&&Hls.isSupported()){hls=new Hls({enableWorker:true});hls.loadSource(url);hls.attachMedia(v);hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(settings.autoPlay)v.play().catch(()=>{});});hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal)$("playStatus").textContent="No se pudo reproducir. Revisá disponibilidad, CORS y compatibilidad de la fuente."})}else{v.src=url}v.load();$("player").scrollIntoView({behavior:"smooth",block:"start"});if(settings.autoPlay&&!hls)v.play().catch(()=>{});$("playStatus").textContent="Fuente cargada. Presioná Ver/Reproducir si no inicia automáticamente."}
+async function openArchive(item,kind){$("player").classList.add("open");$("player").scrollIntoView({behavior:"smooth",block:"start"});$("nowTitle").textContent=item.title;$("playStatus").textContent="Buscando archivo compatible…";try{const r=await fetch("https://archive.org/metadata/"+encodeURIComponent(item.identifier));if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();const files=(d.files||[]).filter(f=>f.name&&/\.(mp4|m4v|webm|ogv)$/i.test(f.name)&&Number(f.size||0)>0).sort((a,b)=>(/\.mp4$/i.test(b.name)?3:1)-(/\.mp4$/i.test(a.name)?3:1));if(!files.length)throw Error("La ficha no contiene un vídeo compatible.");const f=files[0],url="https://archive.org/download/"+encodeURIComponent(item.identifier)+"/"+f.name;openPlayer(url,item.title,kind);$("playerHint").textContent="Archivo público de Internet Archive. Consultá la ficha original para verificar derechos y disponibilidad."}catch(e){$("playStatus").textContent="No se pudo preparar la reproducción: "+e.message}}
+function openItem(x,kind){if(x.identifier){openArchive(x,kind);return}if(x.url){const h={...x,kind};history=[h,...history.filter(y=>itemKey(y)!==itemKey(h))].slice(0,60);persist();openPlayer(x.url,x.name||x.title||"Contenido",kind);return}$("playStatus").textContent="Este elemento no tiene una fuente reproducible."}
+$("closePlayer").onclick=()=>{const v=$("video");v.pause();if(hls){hls.destroy();hls=null}v.removeAttribute("src");v.load();$("player").classList.remove("open")};
+$("togglePlay").onclick=()=>{$("video").paused?$("video").play().catch(()=>{}):$("video").pause()};
+$("back10").onclick=()=>{const v=$("video");v.currentTime=Math.max(0,v.currentTime-10)};$("forward10").onclick=()=>{const v=$("video");if(Number.isFinite(v.duration))v.currentTime=Math.min(v.duration,v.currentTime+10)};
+$("mute").onclick=()=>{$("video").muted=!$("video").muted;$("mute").textContent=$("video").muted?"🔇":"🔊"};$("volume").oninput=e=>{$("video").volume=Number(e.target.value);$("video").muted=$("video").volume===0};
+$("seek").oninput=e=>{const v=$("video");if(Number.isFinite(v.duration)&&v.duration>0)v.currentTime=Number(e.target.value)/1000*v.duration};
+$("fullscreen").onclick=()=>{const p=$("player");if(document.fullscreenElement)document.exitFullscreen?.();else p.requestFullscreen?.().catch(()=>{})};
+$("video").addEventListener("timeupdate",()=>{const v=$("video");$("currentTime").textContent=formatTime(v.currentTime);$("duration").textContent=formatTime(v.duration);if(Number.isFinite(v.duration)&&v.duration>0)$("seek").value=String(Math.round(v.currentTime/v.duration*1000))});
+$("video").addEventListener("play",()=>{$("playStatus").textContent="Reproduciendo"});$("video").addEventListener("pause",()=>{if($("video").currentTime>0)$("playStatus").textContent="En pausa"});$("video").addEventListener("error",()=>{$("playStatus").textContent="Error de reproducción. Puede ser CORS, formato no compatible, enlace caído o restricción del proveedor."});
+function renderCatalog(items,root,kind){root.replaceChildren();if(!items.length){root.innerHTML='<div class="empty">No se encontraron resultados. Probá otra búsqueda.</div>';return}items.forEach(x=>root.append(card(x,kind)))}
+async function searchArchive(query,kind){const root=$(kind==="movie"?"movieGrid":"seriesGrid"),counter=$(kind==="movie"?"movieCount":"seriesCount"),button=$(kind==="movie"?"loadMovies":"loadSeries");button.disabled=true;counter.textContent="Buscando…";try{const q=kind==="movie"?'mediatype:movies AND licenseurl:(*publicdomain*)':'mediatype:movies AND (subject:television OR subject:tv OR subject:episode) AND licenseurl:(*publicdomain*)';const p=new URLSearchParams({q,output:"json",rows:"100","sort[]":"downloads desc"});["identifier","title","creator","year","description","licenseurl"].forEach(f=>p.append("fl[]",f));const r=await fetch("https://archive.org/advancedsearch.php?"+p);if(!r.ok)throw Error("Internet Archive HTTP "+r.status);const d=await r.json();let arr=(d.response?.docs||[]).filter(x=>x.identifier&&String(x.licenseurl||"").toLowerCase().includes("publicdomain")).map(x=>({...x,kind:kind==="movie"?"movies":"series",meta:[x.year,x.creator].filter(Boolean).join(" · "),categoryLabel:"Dominio público"}));if(kind==="movie")movieItems=arr;else seriesItems=arr;const filtered=arr.filter(x=>(x.title||"").toLowerCase().includes(query.toLowerCase()));counter.textContent=filtered.length+" resultados · dominio público";renderCatalog(filtered,root,kind==="movie"?"movie":"series")}catch(e){counter.textContent="No se pudo cargar";root.innerHTML='<div class="empty">Error al consultar el catálogo: '+escapeHtml(e.message)+'. Podés reintentar más tarde.</div>'}finally{button.disabled=false}}
+$("loadMovies").onclick=()=>searchArchive($("movieSearch").value,"movie");$("loadSeries").onclick=()=>searchArchive($("seriesSearch").value,"series");
+$("movieSearch").oninput=()=>renderCatalog(movieItems.filter(x=>(x.title||"").toLowerCase().includes($("movieSearch").value.toLowerCase())),$("movieGrid"),"movie");
+$("seriesSearch").oninput=()=>renderCatalog(seriesItems.filter(x=>(x.title||"").toLowerCase().includes($("seriesSearch").value.toLowerCase())),$("seriesGrid"),"series");
+$("globalSearch").onkeydown=e=>{if(e.key==="Enter")runGlobalSearch()};$("searchGo").onclick=runGlobalSearch;function runGlobalSearch(){const q=$("globalSearch").value.trim();if(!q)return;$("channelSearch").value=q;$("movieSearch").value=q;$("seriesSearch").value=q;section("live");renderChannels();if(movieItems.length)renderCatalog(movieItems.filter(x=>(x.title||"").toLowerCase().includes(q.toLowerCase())),$("movieGrid"),"movie")}
+$("xmlFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const doc=new DOMParser().parseFromString(await f.text(),"application/xml");if(doc.querySelector("parsererror"))throw Error("XML inválido");xmlPrograms=[...doc.querySelectorAll("programme")].map(p=>({channel:p.getAttribute("channel"),start:p.getAttribute("start"),stop:p.getAttribute("stop"),title:p.querySelector("title")?.textContent||"Programa"}));$("guideStatus").textContent=xmlPrograms.length+" programas cargados desde "+f.name;status("Guía XMLTV importada.")}catch(err){$("guideStatus").textContent=err.message}};
+$("clearHistory").onclick=()=>{history=[];persist();renderHistory()};$("clearLocal").onclick=()=>{if(confirm("Esto borrará canales, favoritos e historial guardados en este navegador. ¿Continuar?")){["channels","favorites","history","settings"].forEach(k=>localStorage.removeItem(STORE+k));channels=[];favorites=[];history=[];settings={autoPlay:false,motion:"normal"};persist();renderChannels();renderFavorites();renderHistory();applySettings();status("Datos locales borrados.")}};
+function applySettings(){$("autoPlay").checked=!!settings.autoPlay;$("motion").value=settings.motion||"normal";document.documentElement.style.scrollBehavior=settings.motion==="reduced"?"auto":"smooth";$("storageInfo").textContent=favorites.length+" favoritos · "+history.length+" elementos en historial · "+channels.length+" canales locales."}
+$("autoPlay").onchange=e=>{settings.autoPlay=e.target.checked;persist()};$("motion").onchange=e=>{settings.motion=e.target.value;persist();applySettings()};
+document.addEventListener("keydown",e=>{const tag=(e.target.tagName||"").toLowerCase(),typing=["input","textarea","select"].includes(tag);if(e.key==="Escape"||e.key==="Backspace"&&!typing){if($("player").classList.contains("open"))$("closePlayer").click();else if(!typing)section("home");}else if(!typing&&e.key===" "&&$("player").classList.contains("open")){e.preventDefault();$("togglePlay").click()}else if(!typing&&e.key.toLowerCase()==="f"&&$("player").classList.contains("open"))$("fullscreen").click()});
+fetch("/api/auth/me",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(d=>{if(d?.user?.role==="admin")$("adminLink").classList.remove("hidden")}).catch(()=>{});
+applySettings();renderChannels();renderFavorites();renderHistory();syncChannels();
 })();
-</script></body></html>
+</script>
+</body></html>
