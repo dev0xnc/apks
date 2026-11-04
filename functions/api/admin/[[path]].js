@@ -276,7 +276,6 @@ if(resource==="import-m3u"&&request.method==="POST"){
   existing.set(key,{...row,sources});
  }
  const statements=[];let added=0,updated=0,disabled=0,optionsAdded=0;
- const feedGroups=new Map();
  for(const [key,group] of grouped){
   const incoming=group.entries.map(entry=>({
    url:entry.url,language:entry.language,logo:entry.logo,
@@ -290,7 +289,6 @@ if(resource==="import-m3u"&&request.method==="POST"){
   if(previous){
    const previousSources=previous.sources||[];
    const preserved=feedUrl?previousSources.filter(item=>item.feedUrl!==feedUrl):previousSources;
-   const oldForThisFeed=feedUrl?previousSources.filter(item=>item.feedUrl===feedUrl):[];
    merged=[...preserved,...incoming];
    if(!feedUrl){
     for(const old of previousSources)if(!incoming.some(item=>item.url===old.url)&&!merged.some(item=>item.url===old.url))merged.push(old);
@@ -298,8 +296,9 @@ if(resource==="import-m3u"&&request.method==="POST"){
    merged=[...new Map(merged.filter(item=>item.url).map(item=>[item.url,item])).values()];
    if(merged.length>MAX_CHANNEL_SOURCES){capped+=merged.length-MAX_CHANNEL_SOURCES;merged=merged.slice(0,MAX_CHANNEL_SOURCES);}
    const beforeUrls=new Set(previousSources.map(item=>item.url).filter(Boolean));
-   optionsAdded+=merged.filter(item=>!beforeUrls.has(item.url)).length;
-   if(!optionsAdded&&JSON.stringify(previousSources)===JSON.stringify(merged)){duplicates+=incoming.length;continue;}
+   const addedForGroup=merged.filter(item=>!beforeUrls.has(item.url)).length;
+   optionsAdded+=addedForGroup;
+   if(addedForGroup===0&&JSON.stringify(previousSources)===JSON.stringify(merged)){duplicates+=incoming.length;continue;}
    statements.push(env.DB.prepare("UPDATE channels SET category=?,sources_json=?,enabled=0,updated_at=? WHERE id=?").bind(group.category,JSON.stringify(merged),now,previous.id));
    statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_import_pending","channel",previous.id,now));
    previous.sources=merged;previous.enabled=0;updated++;
@@ -311,7 +310,6 @@ if(resource==="import-m3u"&&request.method==="POST"){
    statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_import_pending","channel",channelId,now));
    existing.set(key,{id:channelId,name:group.name,country:group.country,category:group.category,sources:merged,enabled:0});added++;optionsAdded+=merged.length;
   }
-  if(feedUrl)feedGroups.set(key,true);
  }
  if(feedUrl){
   for(const [key,row] of existing){
