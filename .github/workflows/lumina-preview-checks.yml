@@ -1,0 +1,49 @@
+name: Lúmina TV Preview Checks
+
+on:
+  push:
+    branches:
+      - feature/lumina-tv-independent
+  pull_request:
+    branches:
+      - feature/lumina-tv-independent
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check Cloudflare Pages function syntax
+        run: |
+          node --input-type=module --check < 'functions/api/admin/[[path]].js'
+          node --input-type=module --check < 'functions/api/channels.js'
+          node --input-type=module --check < 'functions/api/auth/[[path]].js'
+
+      - name: Check inline browser scripts
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import vm from "node:vm";
+
+          const files = ["apps/minios-tv/index.html", "apps/minios-tv/admin.html"];
+          for (const file of files) {
+            const html = fs.readFileSync(file, "utf8");
+            const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+            let checked = 0;
+            for (const match of scripts) {
+              if (/\bsrc\s*=/i.test(match[1])) continue;
+              const code = match[2].trim();
+              if (!code) continue;
+              new vm.Script(code, { filename: file + "#inline-" + checked });
+              checked++;
+            }
+            console.log(file + ": " + checked + " inline scripts valid");
+          }
+          NODE
