@@ -5,7 +5,7 @@ function safeHttps(value){try{const u=new URL(value);return u.protocol==="https:
 export async function onRequest({request,env}){
  if(request.method!=="GET")return json({error:"method_not_allowed"},405);
  if(!env.DB)return json({error:"service_unavailable"},503);
- const m=(request.headers.get("Cookie")||"").match(/(?:^|;\\s*)minios_tv_session=([^;]+)/);
+ const m=(request.headers.get("Cookie")||"").match(/(?:^|;\s*)minios_tv_session=([^;]+)/);
  if(!m)return json({error:"unauthorized"},401);
  let token;try{token=decodeURIComponent(m[1]);}catch{return json({error:"unauthorized"},401);}
  if(token.length!==64)return json({error:"unauthorized"},401);
