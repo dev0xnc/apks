@@ -457,6 +457,45 @@ if(resource==="channels"&&id==="bulk-delete"&&request.method==="POST"){
  return json({ok:true,deleted,all});
 }
 if(resource==="channels"&&request.method==="POST"){const name=String(body.name||"").trim(),country=String(body.country||"").trim().toUpperCase(),category=String(body.category||"general"),source=String(body.source||"").trim(),language=String(body.language||"").trim().slice(0,40),logo=String(body.logo||"").trim(),description=String(body.description||"").trim().slice(0,500),evidence=String(body.evidence||"").trim();if(!name||name.length>100||!COUNTRIES.includes(country)||!CATEGORIES.includes(category)||!evidence||evidence.length>500)return json({error:"invalid_channel"},400);let ev,lg;try{ev=new URL(evidence);if(logo)lg=new URL(logo);}catch{return json({error:"invalid_channel"},400);}if(ev.protocol!=="https:"||ev.username||ev.password||(logo&&(lg.protocol!=="https:"||lg.username||lg.password)))return json({error:"invalid_channel"},400);const pending=body.pending===true;const duplicate=await env.DB.prepare("SELECT id FROM channels WHERE country=? AND name=? COLLATE NOCASE LIMIT 1").bind(country,name).first();if(duplicate)return json({error:"channel_exists"},409);let stream="";if(!pending){let u;try{u=new URL(source);}catch{return json({error:"invalid_source"},400);}if(!isVideoSource(u.href))return json({error:"invalid_source"},400);stream=u.href;}let verification=null;if(!pending){verification=await probeVideoSource(stream);if(!verification.ok)return json({error:"source_not_verified",probe:verification},422);}const channelId=crypto.randomUUID(),metadata={url:stream,language,logo:logo||"",description,evidence:ev.href,verification};await env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,category,JSON.stringify([metadata]),pending?0:1,now,now).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,pending?"channel_pending":"channel_create","channel",channelId,now).run();return json({ok:true,id:channelId,pending},201);}
-if(resource==="channels"&&id&&request.method==="PATCH"){const name=String(body.name||"").trim(),country=String(body.country||"").toUpperCase(),category=String(body.category||"general"),source=String(body.source||"").trim(),evidence=String(body.evidence||"").trim(),enabled=body.enabled===true;if(!name||name.length>100||!COUNTRIES.includes(country)||!CATEGORIES.includes(category)||!evidence)return json({error:"invalid_channel"},400);let ev;try{ev=new URL(evidence)}catch{return json({error:"invalid_channel"},400)}if(ev.protocol!=="https:"||ev.username||ev.password)return json({error:"invalid_channel"},400);const old=await env.DB.prepare("SELECT sources_json FROM channels WHERE id=?").bind(id).first();if(!old)return json({error:"not_found"},404);let oldSources=[];try{oldSources=JSON.parse(old.sources_json||"[]").filter(x=>x&&typeof x==="object")}catch{}const requested=Array.isArray(body.sources)?body.sources:[source];const urls=[...new Set(requested.map(x=>String(x||"").trim()).filter(Boolean))].slice(0,MAX_CHANNEL_SOURCES);let nextSources=oldSources,failedSources=0;if(urls.length){const checked=[];for(const value of urls){let u;try{u=new URL(value)}catch{return json({error:"invalid_source"},400)}if(!isVideoSource(u.href))return json({error:"invalid_source"},400);const verification=enabled?await probeVideoSource(u.href):null;if(enabled&&!verification.ok){failedSources++;continue;}const previous=oldSources.find(x=>x.url===u.href)||{};checked.push({...previous,url:u.href,evidence:ev.href,authorizationStatus:enabled?"approved":(previous.authorizationStatus||"pending"),authorizationConfirmedAt:enabled?now:(previous.authorizationConfirmedAt||null),verification:verification||previous.verification||null});}if(checked.length)nextSources=checked;}if(enabled&&!nextSources.some(x=>x.url&&x.authorizationStatus==="approved"&&x.verification?.ok===true))return json({error:"source_not_verified",failedSources},422);if(!nextSources.length)nextSources=[{url:"",evidence:ev.href}];const meta={...(nextSources[0]||{}),evidence:ev.href};for(const k of ["language","logo","description"])if(body[k]!==undefined)meta[k]=String(body[k]).slice(0,500);if(nextSources.length)nextSources[0]=meta;await env.DB.prepare("UPDATE channels SET name=?,country=?,category=?,sources_json=?,enabled=?,updated_at=? WHERE id=?").bind(name,country,category,JSON.stringify(nextSources),enabled?1:0,now,id).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_update","channel",id,now).run();return json({ok:true,enabled,sourceCount:nextSources.filter(x=>x.url).length,failedSources});}
+if(resource==="channels"&&id&&request.method==="PATCH"){
+ const name=String(body.name||"").trim(),country=String(body.country||"").toUpperCase(),category=String(body.category||"general"),source=String(body.source||"").trim(),evidence=String(body.evidence||"").trim(),enabled=body.enabled===true;
+ if(!name||name.length>100||!COUNTRIES.includes(country)||!CATEGORIES.includes(category))return json({error:"invalid_channel"},400);
+ const old=await env.DB.prepare("SELECT sources_json FROM channels WHERE id=?").bind(id).first();
+ if(!old)return json({error:"not_found"},404);
+ let oldSources=[];try{oldSources=JSON.parse(old.sources_json||"[]").filter(x=>x&&typeof x==="object")}catch{}
+ const requested=Array.isArray(body.sources)?body.sources:[source];
+ const urls=[...new Set(requested.map(x=>String(x||"").trim()).filter(Boolean))].slice(0,MAX_CHANNEL_SOURCES);
+ const officialSources=oldSources.filter(item=>item.type==="official_page"&&item.authorizationStatus==="approved"&&item.authorizationScope==="external_link_only"&&publicHttpsUrl(String(item.website||"")));
+ if(!urls.length){
+  if(enabled&&!officialSources.length)return json({error:"source_not_verified",message:"No hay una fuente de vídeo verificada ni una página oficial externa."},422);
+  const kept=officialSources.length?officialSources:oldSources;
+  await env.DB.batch([
+   env.DB.prepare("UPDATE channels SET name=?,country=?,category=?,sources_json=?,enabled=?,updated_at=? WHERE id=?").bind(name,country,category,JSON.stringify(kept),enabled?1:0,now,id),
+   env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,enabled?"channel_enable_external":"channel_disable","channel",id,now)
+  ]);
+  return json({ok:true,enabled,externalOnly:officialSources.length>0,sourceCount:0,failedSources:0});
+ }
+ const evidenceUrl=publicHttpsUrl(evidence);
+ if(!evidenceUrl)return json({error:"invalid_channel_evidence"},400);
+ const checked=[];let failedSources=0;
+ for(const value of urls){
+  const safeSource=publicHttpsUrl(value);
+  if(!safeSource||!isVideoSource(safeSource.href))return json({error:"invalid_source"},400);
+  const verification=enabled?await probeVideoSource(safeSource.href):null;
+  if(enabled&&!verification.ok){failedSources++;continue;}
+  const previous=oldSources.find(item=>item.url===safeSource.href)||{};
+  checked.push({...previous,url:safeSource.href,evidence:evidenceUrl.href,authorizationStatus:enabled?"approved":(previous.authorizationStatus||"pending"),authorizationScope:previous.authorizationScope||"direct_feed",authorizationConfirmedAt:enabled?now:(previous.authorizationConfirmedAt||null),verification:verification||previous.verification||null});
+ }
+ if(enabled&&!checked.some(item=>item.authorizationStatus==="approved"&&item.verification?.ok===true))return json({error:"source_not_verified",failedSources},422);
+ const nextSources=[...checked,...officialSources].slice(0,MAX_CHANNEL_SOURCES);
+ const meta={...(nextSources[0]||{}),evidence:evidenceUrl.href};
+ for(const key of ["language","logo","description"])if(body[key]!==undefined)meta[key]=String(body[key]).slice(0,500);
+ if(nextSources.length)nextSources[0]=meta;
+ await env.DB.batch([
+  env.DB.prepare("UPDATE channels SET name=?,country=?,category=?,sources_json=?,enabled=?,updated_at=? WHERE id=?").bind(name,country,category,JSON.stringify(nextSources),enabled?1:0,now,id),
+  env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_update","channel",id,now)
+ ]);
+ return json({ok:true,enabled,sourceCount:checked.length,externalSourceCount:officialSources.length,failedSources});
+}
 if(resource==="channels"&&id&&request.method==="DELETE"){const statements=[env.DB.prepare("DELETE FROM user_channel_permissions WHERE channel_id=?").bind(id),env.DB.prepare("DELETE FROM channels WHERE id=?").bind(id),env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_delete","channel",id,now)];try{await env.DB.batch(statements);}catch(error){return json({error:"channel_delete_failed",detail:String(error?.message||"database_error").replace(/[\\r\\n]+/g," ").slice(0,180)},500);}return json({ok:true});}
 return json({error:"not_found"},404);}
