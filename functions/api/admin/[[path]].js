@@ -112,7 +112,7 @@ if(resource==="discover"&&request.method==="POST"){
   const evidence="https://www.wikidata.org/wiki/"+id;
   const metadata={url:"",language:String(item.language||"").slice(0,40),logo,description:String(item.description||"").slice(0,500),evidence,discoveryId:id};
   const channelId=crypto.randomUUID();
-  stmts.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,"general",JSON.stringify([metadata]),0,now,now));
+  stmts.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,"general",JSON.stringify(mergedSources.length?mergedSources:[metadata]),0,now,now));
   stmts.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_discovered_pending","channel",channelId,now));
   existing.add(key);added++;
  }
@@ -192,10 +192,13 @@ if(resource==="discover-playlists"&&request.method==="POST"){
   if(!item.probe.ok){failed++;continue;}
   const key=item.country+"|"+normalizeChannelName(item.name),previous=existing.get(key);
   const verification={status:"verified",kind:item.probe.kind,contentType:item.probe.contentType||"",httpStatus:item.probe.httpStatus,checkedAt:item.probe.checkedAt,note:"La respuesta HTTP y el formato fueron comprobados desde el servidor. La reproducción final también depende de CORS, región, códecs y disponibilidad en el dispositivo."};
-  const metadata={...(previous?.meta||{}),url:item.url,logo:item.logo||previous?.meta?.logo||"",description:"Transmisión directa detectada y comprobada automáticamente. Pendiente de revisión de autorización y reproducción en el dispositivo.",evidence:item.evidence,website:item.website,directory:"teleonline",directoryUrl:directoryPage,directoryCheckedAt:now,verification};
+  const oldSources=previous?(()=>{try{return JSON.parse(previous.sources_json||"[]").filter(x=>x&&typeof x.url==="string")}catch{return []}})():[];
+  const additions=(item.verifiedSources||[]).map((entry,index)=>({url:entry.url,logo:item.logo||"",description:"OP "+(index+1)+" · señal detectada y comprobada; pendiente de revisión de autorización.",evidence:item.evidence,website:item.website,directory:"teleonline",directoryUrl:directoryPage,directoryCheckedAt:now,verification:{status:"verified",kind:entry.probe.kind,contentType:entry.probe.contentType||"",httpStatus:entry.probe.httpStatus,checkedAt:entry.probe.checkedAt}}));
+  const mergedSources=[...oldSources,...additions.filter(x=>!oldSources.some(y=>y.url===x.url))].slice(0,5);
+  const metadata={...(previous?.meta||{}),...(mergedSources[0]||{}),url:mergedSources[0]?.url||item.url,logo:item.logo||previous?.meta?.logo||"",description:"Señales detectadas automáticamente. Pendientes de revisión de autorización y reproducción en el dispositivo.",evidence:item.evidence,website:item.website,directory:"teleonline",directoryUrl:directoryPage,directoryCheckedAt:now,verification};
   if(previous){
    if(previous.meta?.url&&previous.meta.url!==item.url){alreadyConfigured++;continue;}
-   statements.push(env.DB.prepare("UPDATE channels SET sources_json=?,enabled=?,updated_at=? WHERE id=?").bind(JSON.stringify([metadata]),previous.enabled?1:0,now,previous.id));
+   statements.push(env.DB.prepare("UPDATE channels SET sources_json=?,enabled=?,updated_at=? WHERE id=?").bind(JSON.stringify(mergedSources.length?mergedSources:[metadata]),previous.enabled?1:0,now,previous.id));
    statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_stream_verified","channel",previous.id,now));
    if(previous.meta?.url)alreadyConfigured++;else enriched++;
    previous.meta=metadata;
@@ -208,7 +211,7 @@ if(resource==="discover-playlists"&&request.method==="POST"){
  }
  for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
  const elapsedMs=Date.now()-startedAt,notChecked=Math.max(0,candidates.length-checked.length);
- return json({ok:true,source:"Teleonline",country:selectedCountry,requestedLimit:limit,timeBudgetSeconds,elapsedMs,candidatesFound:candidates.length,checked:checked.length,verified:checked.filter(x=>x.probe.ok).length,failed,added,enriched,alreadyConfigured,withoutStream,skipped,notChecked,results:checked.map(x=>({name:x.name,country:x.country,ok:x.probe.ok,code:x.probe.code,kind:x.probe.kind||"",message:x.probe.message,added:!!x.probe.ok})) ,directoryUrl});
+ return json({ok:true,source:"Teleonline",country:selectedCountry,requestedLimit:limit,timeBudgetSeconds,elapsedMs,candidatesFound:candidates.length,checked:checked.length,verified:checked.filter(x=>x.probe.ok).length,verifiedOptions:checked.reduce((n,x)=>n+(x.verifiedSources?.length||0),0),failed,added,enriched,alreadyConfigured,withoutStream,skipped,notChecked,results:checked.map(x=>({name:x.name,country:x.country,ok:x.probe.ok,options:x.verifiedSources?.length||0,code:x.probe.code,kind:x.probe.kind||"",message:x.probe.message,added:!!x.probe.ok})),directoryUrl});
 }
 if(resource==="import-m3u"&&request.method==="POST"){
  if(body.rightsConfirmed!==true)return json({error:"rights_confirmation_required"},400);
