@@ -23,8 +23,13 @@ async function probeVideoSource(value,timeoutMs=2800){
   const contentType=String(response.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
   reader=response.body?.getReader();
   if(reader){
-   const part=await reader.read();
-   if(part.value)prefix=new TextDecoder().decode(part.value.subarray(0,8192));
+   const decoder=new TextDecoder();let received=0;
+   while(received<4096){
+    const part=await reader.read();if(part.done)break;
+    const chunk=part.value.subarray(0,4096-received);
+    prefix+=decoder.decode(chunk,{stream:true});received+=chunk.byteLength;
+    if((extension==="m3u8"&&/#EXTM3U/i.test(prefix))||(extension==="mpd"&&/<MPD(?:\\s|>)/i.test(prefix)))break;
+   }
    await reader.cancel().catch(()=>{});
   }
   const isHls=extension==="m3u8"||contentType.includes("mpegurl");
