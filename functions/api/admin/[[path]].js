@@ -211,9 +211,10 @@ if(resource==="discover-playlists"&&request.method==="POST"){
 
  const cleanCountry=value=>{
   const raw=String(value||"").trim();
-  const attempts=[raw,raw.replace(/^[^\\p{L}]*/u,"").trim(),(raw.match(/[\\p{L}][\\p{L} .'-]*/u)||[])[0]||""];
-  for(const attempt of attempts){const code=countryCode(attempt);if(code)return code;}
-  return "";
+  const direct=countryCode(raw);
+  if(direct)return direct;
+  const name=raw.replace(/^[^A-Za-zÀ-ÿ]+/,"").trim();
+  return countryCode(name);
  };
  if(!Array.isArray(directory.countries))return json({error:"directory_invalid_structure"},502);
  const candidates=[],seen=new Set();
