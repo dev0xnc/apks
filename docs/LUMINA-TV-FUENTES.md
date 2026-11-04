@@ -36,9 +36,10 @@ Para una URL remota, Lúmina TV conserva su dirección en el navegador de admini
 
 - HLS (`.m3u8`): HLS.js o soporte HLS nativo del navegador.
 - MPEG-DASH (`.mpd`): dash.js.
-- Vídeo directo: MP4, M4V, WebM, Ogg/OGV, MOV, MPEG/MPG, 3GP, TS, MKV, AVI y FLV.
+- Vídeo directo: MP4, M4V, WebM y Ogg/OGV.
+- La búsqueda automática prioriza HLS y prueba hasta dos direcciones alternativas por canal.
 
-La aceptación de una URL no garantiza que el proveedor esté transmitiendo en ese momento. El soporte real de MOV, MKV, AVI, FLV, TS y otros contenedores depende de los códecs instalados en el navegador y del dispositivo. No existe compatibilidad universal para todos los formatos sin transcodificación.
+La validación del servidor restringe las fuentes nuevas a HLS, MPEG-DASH, MP4, M4V, WebM y Ogg/OGV. Otros contenedores (MOV, TS, MKV, AVI y FLV) no se ofrecen como compatibles porque el soporte del navegador y del TV Box es irregular. Una respuesta técnicamente válida tampoco garantiza reproducción continua ni compatibilidad con todos los dispositivos.
 
 ## Límites operativos y permisos
 
