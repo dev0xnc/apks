@@ -6,6 +6,15 @@
 <div class="top"><div><h1>Lúmina TV · Administración</h1><p class="muted">Gestioná usuarios y señales autorizadas.</p></div><div><a href="./index.html">Volver a TV</a> <button id="logout">Cerrar sesión</button></div></div>
 <section class="panel"><h2>Usuarios</h2><p class="muted">Suspender una cuenta revoca automáticamente todas sus sesiones.</p><input id="userSearch" placeholder="Buscar por correo"><div id="users">Cargando…</div></section>
 <section class="panel"><h2>Permisos individuales y cuentas</h2><p class="muted">Elegí qué señales puede ver cada cuenta. “Todos los canales” también habilita automáticamente los canales nuevos que se incorporen en el futuro. La cuenta verá un canal solo cuando esté activo y su categoría también esté permitida.</p><select id="manageUser"></select><div id="channelPermissions"></div><div class="row"><button type="button" id="selectCurrentChannels">Seleccionar todos los actuales</button><button type="button" id="clearChannelSelection">Quitar todos</button></div><button type="button" id="saveChannelPermissions">Guardar canales permitidos</button><div class="row"><input id="temporaryPassword" type="password" minlength="12" placeholder="Nueva contraseña temporal (12+ caracteres)"><button type="button" id="resetUserPassword">Restablecer contraseña</button></div><p class="muted">Al cambiar una contraseña se revocan las sesiones de esa cuenta.</p></section><section class="panel"><h2>Descubrimiento de canales</h2><p class="muted">Busca candidatos de TV de los países de Latinoamérica usando metadatos públicos. Se descartan resultados sin país latinoamericano identificado. Añadir un candidato crea una ficha pendiente: su referencia de Wikidata o su sitio web no demuestra autorización ni habilita una transmisión.</p><button type="button" id="autoDiscover">Buscar emisoras en fuentes públicas (Latinoamérica)</button><form id="discover" class="row"><input id="query" placeholder="Ej.: TV Pública, Telefe, Canal 13…" minlength="2" required><button>Buscar canales</button></form><div id="results"></div></section>
+<section class="panel" id="m3uFeedPanel"><h2>Importar / actualizar catálogo M3U</h2>
+<p class="muted">Importá una lista M3U autorizada desde un archivo o una URL HTTPS pública. Los canales con país y enlaces de vídeo compatibles se incorporan al catálogo; una URL remota puede actualizar los canales de esa misma lista sin duplicarlos.</p>
+<div class="row"><input id="m3uAdminFile" type="file" accept=".m3u,.m3u8,text/plain"><input id="m3uAdminUrl" type="url" placeholder="https://servidor-oficial/lista.m3u"></div>
+<div class="row"><select id="m3uDefaultCountry"><option value="">País por defecto (si la lista no indica país)</option><option value="AR">Argentina</option><option value="BR">Brasil</option><option value="CL">Chile</option><option value="UY">Uruguay</option><option value="PY">Paraguay</option><option value="BO">Bolivia</option><option value="PE">Perú</option><option value="EC">Ecuador</option><option value="CO">Colombia</option><option value="VE">Venezuela</option><option value="MX">México</option><option value="CR">Costa Rica</option><option value="CU">Cuba</option><option value="DO">República Dominicana</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PR">Puerto Rico</option></select><input id="m3uAdminEvidence" type="url" placeholder="HTTPS: sitio oficial / permiso de distribución"></div>
+<label style="display:block;margin:10px 0"><input id="m3uRightsConfirmed" type="checkbox"> Confirmo que tengo autorización para distribuir las transmisiones de esta lista.</label>
+<button type="button" class="primary" id="m3uAdminImport">Importar / actualizar canales</button>
+<p id="m3uAdminStatus" class="status" role="status"></p>
+<p class="muted">La URL remota guardada se revisa cada 24 horas cuando abrís o mantenés abierta esta administración. No funciona como tarea en segundo plano si el navegador está cerrado. Se requieren enlaces HTTPS directos y reproducibles; algunas señales pueden depender de región, cookies o códecs del dispositivo.</p>
+</section>
 <section class="panel"><h2>Agregar canal autorizado</h2><form id="channel">
 <div class="row"><input id="name" placeholder="Nombre del canal" required maxlength="100"><select id="country" required><option value="">País</option><option value="AR">Argentina</option><option value="BR">Brasil</option><option value="CL">Chile</option><option value="UY">Uruguay</option><option value="PY">Paraguay</option><option value="BO">Bolivia</option><option value="PE">Perú</option><option value="EC">Ecuador</option><option value="CO">Colombia</option><option value="VE">Venezuela</option><option value="MX">México</option><option value="CR">Costa Rica</option><option value="CU">Cuba</option><option value="DO">República Dominicana</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PR">Puerto Rico</option></select><select id="category"><option value="general">General</option><option value="sports">Deportes</option><option value="news">Noticias</option><option value="entertainment">Entretenimiento</option><option value="education">Educación</option><option value="culture">Cultura</option><option value="music">Música</option><option value="religion">Religión</option></select></div>
 <div class="row"><input id="language" placeholder="Idioma (ej. Español)"><input id="logo" type="url" placeholder="Logo HTTPS (opcional)"></div>
@@ -54,8 +63,91 @@ $("results").onclick=async e=>{
  }
 };
 $("channel").onsubmit=async e=>{e.preventDefault();const body={name:$("name").value,country:$("country").value,category:$("category").value,language:$("language").value,logo:$("logo").value,description:$("description").value,source:$("source").value,evidence:$("evidence").value};try{await api("channels",{method:"POST",body:JSON.stringify(body)});e.target.reset();$("status").textContent="Canal publicado.";await load();}catch(x){$("status").textContent=x.message;}};
+const LATAM_DISCOVERY_COUNTRIES=[
+ {code:"AR",name:"Argentina",query:"canal de televisión"},
+ {code:"BR",name:"Brasil",query:"canal de televisão"},
+ {code:"CL",name:"Chile",query:"canal de televisión"},
+ {code:"UY",name:"Uruguay",query:"canal de televisión"},
+ {code:"PY",name:"Paraguay",query:"canal de televisión"},
+ {code:"BO",name:"Bolivia",query:"canal de televisión"},
+ {code:"PE",name:"Perú",query:"canal de televisión"},
+ {code:"EC",name:"Ecuador",query:"canal de televisión"},
+ {code:"CO",name:"Colombia",query:"canal de televisión"},
+ {code:"VE",name:"Venezuela",query:"canal de televisión"},
+ {code:"MX",name:"México",query:"canal de televisión"},
+ {code:"CR",name:"Costa Rica",query:"canal de televisión"},
+ {code:"PA",name:"Panamá",query:"canal de televisión"},
+ {code:"GT",name:"Guatemala",query:"canal de televisión"},
+ {code:"HN",name:"Honduras",query:"canal de televisión"},
+ {code:"SV",name:"El Salvador",query:"canal de televisión"},
+ {code:"NI",name:"Nicaragua",query:"canal de televisión"},
+ {code:"CU",name:"Cuba",query:"canal de televisión"},
+ {code:"DO",name:"República Dominicana",query:"canal de televisión"},
+ {code:"PR",name:"Puerto Rico",query:"television channel"}
+];
+$("autoDiscover").onclick=async()=>{
+ const button=$("autoDiscover");button.disabled=true;const results=new Map();let failures=0,created=0,duplicates=0;
+ try{
+  for(let i=0;i<LATAM_DISCOVERY_COUNTRIES.length;i+=2){
+   const group=LATAM_DISCOVERY_COUNTRIES.slice(i,i+2);
+   $("results").textContent="Buscando metadatos: "+Math.min(i+2,LATAM_DISCOVERY_COUNTRIES.length)+" de "+LATAM_DISCOVERY_COUNTRIES.length+" países…";
+   const responses=await Promise.all(group.map(async country=>{
+    try{return {country,data:await api("discover?q="+encodeURIComponent(country.query+" "+country.name))};}
+    catch{return {country,data:{results:[]},failed:true};}
+   }));
+   for(const response of responses){
+    if(response.failed)failures++;
+    const valid=(response.data.results||[]).filter(x=>x.country===response.country.code&&x.id&&x.label).slice(0,6);
+    for(const item of valid)if(!results.has(item.id))results.set(item.id,item);
+   }
+  }
+  const items=[...results.values()].slice(0,120);
+  if(!items.length)throw Error("No se encontraron fichas con país identificado. Probá la búsqueda manual.");
+  for(let i=0;i<items.length;i+=35){
+   const batch=items.slice(i,i+35);
+   const response=await api("discover",{method:"POST",body:JSON.stringify({items:batch})});
+   created+=response.added||0;duplicates+=response.duplicates||0;
+  }
+  await load();renderDiscoveryResults(items);
+  $("status").textContent="Exploración terminada: "+created+" fichas nuevas guardadas como pendientes, "+duplicates+" ya existentes"+(failures?" y "+failures+" búsquedas fallidas":"")+". Para reproducirlas todavía hay que incorporar una transmisión autorizada.";
+ }catch(error){$("status").textContent="No se pudo completar el descubrimiento: "+error.message;}
+ finally{button.disabled=false;}
+};
+const FEED_STORAGE_KEY="lumina_tv_authorized_feed_v1";
+function readSavedFeed(){try{return JSON.parse(localStorage.getItem(FEED_STORAGE_KEY)||"null")}catch{return null}}
+async function refreshSavedFeed(force=false){
+ const config=readSavedFeed();if(!config||!config.sourceUrl||!config.evidence)return;
+ if(!force&&Date.now()-Number(config.lastRefresh||0)<24*60*60*1000)return;
+ const status=$("m3uAdminStatus");status.textContent="Actualizando la lista M3U guardada…";
+ try{
+  const result=await api("import-m3u",{method:"POST",body:JSON.stringify({sourceUrl:config.sourceUrl,evidence:config.evidence,defaultCountry:config.defaultCountry||"",rightsConfirmed:true})});
+  config.lastRefresh=Date.now();localStorage.setItem(FEED_STORAGE_KEY,JSON.stringify(config));
+  status.textContent="Lista actualizada: "+result.added+" nuevos, "+result.updated+" actualizados, "+result.duplicates+" duplicados, "+result.skipped+" omitidos.";
+  await load();
+ }catch(error){status.textContent="No se pudo actualizar la lista guardada: "+error.message;}
+}
+$("m3uAdminImport").onclick=async()=>{
+ const button=$("m3uAdminImport"),file=$("m3uAdminFile").files[0],sourceUrl=$("m3uAdminUrl").value.trim(),evidence=$("m3uAdminEvidence").value.trim(),defaultCountry=$("m3uDefaultCountry").value;
+ const status=$("m3uAdminStatus");
+ if(!file&&!sourceUrl){status.textContent="Seleccioná un archivo M3U o ingresá una URL HTTPS.";return;}
+ if(file&&sourceUrl){status.textContent="Usá un archivo o una URL, no ambos a la vez.";return;}
+ if(!evidence){status.textContent="Ingresá la página oficial que acredita la autorización.";return;}
+ if(!$("m3uRightsConfirmed").checked){status.textContent="Confirmá que tenés autorización para distribuir esta lista.";return;}
+ button.disabled=true;status.textContent="Procesando lista y validando las entradas…";
+ try{
+  const body={evidence,defaultCountry,rightsConfirmed:true};
+  if(file){if(file.size>1048576)throw Error("El archivo supera el máximo de 1 MB.");body.playlistText=await file.text();}
+  else body.sourceUrl=sourceUrl;
+  const result=await api("import-m3u",{method:"POST",body:JSON.stringify(body)});
+  if(sourceUrl){localStorage.setItem(FEED_STORAGE_KEY,JSON.stringify({sourceUrl,evidence,defaultCountry,lastRefresh:Date.now()}));}
+  status.textContent="Importación terminada: "+result.added+" canales nuevos, "+result.updated+" actualizados, "+result.duplicates+" duplicados y "+result.skipped+" omitidos por formato, URL o país. Los canales importados están habilitados para las cuentas con permiso.";
+  await load();
+ }catch(error){status.textContent="No se pudo importar la lista: "+error.message;}
+ finally{button.disabled=false;}
+};
+
 $("logout").onclick=async()=>{try{await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:"{}"});}finally{location.replace("/apps/minios-tv/login.html")}};
-fetch("/api/auth/me",{credentials:"same-origin"}).then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(d.user.role!=="admin")throw Error();load().catch(e=>$("status").textContent=e.message)}).catch(()=>location.replace("/apps/minios-tv/login.html"));
+fetch("/api/auth/me",{credentials:"same-origin"}).then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(d.user.role!=="admin")throw Error();load().then(()=>refreshSavedFeed(false)).catch(e=>$("status").textContent=e.message);setInterval(()=>refreshSavedFeed(false),60*60*1000)}).catch(()=>location.replace("/apps/minios-tv/login.html"));
 })();
 </script>
 <script>
