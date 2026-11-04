@@ -121,6 +121,7 @@ export async function onRequest(context) {
     return json({ ok: true }, 200, { "Set-Cookie": cookie(token, SESSION_SECONDS) });
   }
 
+  if(action==="password"){const user=await currentUser(request,env);if(!user)return json({error:"unauthorized"},401);const current=body.currentPassword,next=body.newPassword;if(typeof current!=="string"||typeof next!=="string"||next.length<12||next.length>128)return json({error:"invalid_password"},400);const row=await env.DB.prepare("SELECT password_hash,password_salt FROM users WHERE id=?").bind(user.id).first();const oldHash=await passwordHash(current,row.password_salt);if(oldHash!==row.password_hash)return json({error:"current_password_incorrect"},400);const salt=randomId(16),hash=await passwordHash(next,salt),now=Math.floor(Date.now()/1000);await env.DB.prepare("UPDATE users SET password_hash=?,password_salt=?,updated_at=? WHERE id=?").bind(hash,salt,now,user.id).run();await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(user.id).run();return json({ok:true},200,{"Set-Cookie":clearCookie()});}
   if (action === "logout") {
     const user = await currentUser(request, env);
     const raw = request.headers.get("Cookie") || "", m = raw.match(/(?:^|;\s*)minios_tv_session=([^;]+)/);
