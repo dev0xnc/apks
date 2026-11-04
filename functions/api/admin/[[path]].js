@@ -71,6 +71,7 @@ function parseM3UEntries(text,defaultCountry,feedUrl,evidence){const lines=Strin
 
 
 const OFFICIAL_SPORTS_SOURCES=[
+ {id:"tyc-sports-play",name:"TyC Sports Play",country:"AR",category:"sports",website:"https://play.tycsports.com/",provider:"TyC Sports Play · sitio oficial",access:"Registro gratis; la señal lineal 24 h requiere usuario de cableoperador",description:"Fútbol de Selección, Copa Argentina y Ascenso, además de básquet, vóley, tenis y otros eventos disponibles según programación."},
  {id:"deportv-live",name:"DeporTV",country:"AR",category:"sports",website:"https://deportv.gob.ar/vivo",provider:"DeporTV · sitio oficial",access:"Señal oficial · disponibilidad según TDA, cable y región",description:"Deportes argentinos: fútbol, básquet, motor y otras disciplinas. Se abre el reproductor oficial de DeporTV."},
  {id:"fifa-plus",name:"FIFA+",country:"AR",category:"sports",website:"https://www.dazn.com/es-AR/fifaplus",provider:"FIFA+ en DAZN",access:"Gratis con registro · catálogo y partidos según país",description:"Fútbol internacional, juveniles, selecciones, torneos y archivo. La disponibilidad de cada partido depende del territorio."},
  {id:"lpf-play",name:"LPF Play",country:"AR",category:"sports",website:"https://www.lpfplay.com",provider:"AFA · LPF Play",access:"Plan gratuito limitado · partidos en vivo según suscripción",description:"Plataforma oficial del fútbol argentino para categorías como Ascenso, Femenino, Juveniles y Proyección; no incluye la Primera División en el plan gratuito."},
