@@ -2,7 +2,7 @@
 
 ## Descubrimiento de canales
 
-En Administración, **Buscar emisoras en fuentes públicas (Latinoamérica)** consulta metadatos públicos de los 20 países configurados y guarda los candidatos identificados como **Pendiente de señal**. Esta búsqueda permite crear fichas de canales; no descubre una transmisión reproducible ni acredita derechos de distribución.
+En Administración, **Descubrir canales automáticamente (Latinoamérica)** rota entre tres fuentes públicas en cada intento: el catálogo de metadatos de iptv-org, Wikidata y el catálogo curado de Teleonline. iptv-org aporta nombres, país, categorías y, cuando existe, la web oficial; sus metadatos no incluyen una transmisión en este flujo. Wikidata aporta fichas descriptivas y Teleonline permite comprobar opciones de transmisión de su catálogo. La rotación se guarda en el navegador de administración y vuelve a comenzar después de los tres proveedores.\n\nLos registros de iptv-org y Wikidata se guardan como **Pendiente de señal** y se mantienen deshabilitados. Se excluyen entradas marcadas como adultas/NSFW y canales cerrados. Estas fuentes no cubren toda Internet ni garantizan resultados: son catálogos concretos, sujetos a disponibilidad y calidad de sus datos. La búsqueda permite ampliar las fichas y categorías; no prueba por sí sola una transmisión ni acredita derechos de distribución.
 
 Una ficha pendiente no se expone en el catálogo de usuarios hasta que el administrador le asigne una fuente válida y la active.
 
@@ -16,7 +16,7 @@ Los canales nuevos se guardan deshabilitados. Si ya existe una ficha sin fuente,
 
 **Alcance de la prueba:** la comprobación de servidor confirma que la URL respondió y que su contenido parece corresponder al formato anunciado; no puede confirmar por sí sola CORS, reproducción en todos los navegadores o TV Box, restricciones geográficas, cookies, DRM, disponibilidad posterior ni derechos de distribución. El administrador debe revisar la página oficial y confirmar la autorización antes de activar. La búsqueda nunca activa canales automáticamente.
 
-Fuente de datos: [Teleonline, catálogo público y su apartado de cumplimiento legal](https://github.com/teleonline/listas).
+Fuentes de metadatos: [iptv-org API y su esquema de canales](https://github.com/iptv-org/api), [Wikidata](https://www.wikidata.org/) y [Teleonline, catálogo público y su apartado de cumplimiento legal](https://github.com/teleonline/listas). Los datos de catálogo se usan como referencias para revisión; no son una autorización de retransmisión.
 
 ## Importar una lista M3U autorizada
 
@@ -37,7 +37,7 @@ Para una URL remota, Lúmina TV conserva su dirección en el navegador de admini
 - HLS (`.m3u8`): HLS.js o soporte HLS nativo del navegador.
 - MPEG-DASH (`.mpd`): dash.js.
 - Vídeo directo: MP4, M4V, WebM y Ogg/OGV.
-- La búsqueda automática prioriza HLS y prueba hasta dos direcciones alternativas por canal.
+- La búsqueda automática prioriza HLS y puede comprobar hasta cinco direcciones alternativas por canal.
 
 La validación del servidor restringe las fuentes nuevas a HLS, MPEG-DASH, MP4, M4V, WebM y Ogg/OGV. Otros contenedores (MOV, TS, MKV, AVI y FLV) no se ofrecen como compatibles porque el soporte del navegador y del TV Box es irregular. Una respuesta técnicamente válida tampoco garantiza reproducción continua ni compatibilidad con todos los dispositivos.
 
