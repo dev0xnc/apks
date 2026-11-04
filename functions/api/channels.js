@@ -32,10 +32,10 @@ export async function onRequest({request,env}){
   const sources=parseSources(row.sources_json);
   const safeSources=sources.filter(item=>safeHttps(item.url));
   const available=Number(row.enabled)===1&&safeSources.length>0;
-  const first=safeSources[0]||{};
+  const first=safeSources[0]||sources[0]||{};
   catalog.push({
    id:row.id,name:row.name,country:row.country||"",category:row.category,
-   enabled:available,logo:safeHttps(first.logo)||"",website:safeHttps(first.website)||"",
+   enabled:available,logo:safeHttps(first.logo)||"",website:safeHttps(first.website)||safeHttps(sources[0]?.website)||"",
    status:available?"available":"pending"
   });
   if(available){
