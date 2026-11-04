@@ -5,6 +5,12 @@ function validOrigin(request){try{return request.url.startsWith("https://")&&req
 const CATEGORIES=["general","sports","news","entertainment","education","culture","music","religion"];
 const COUNTRIES=["AR","BR","CL","UY","PY","BO","PE","EC","CO","VE","MX","CR","CU","DO","SV","GT","HN","NI","PA","PR"];
 function isVideoSource(value){try{const u=new URL(value);if(u.protocol!=="https:"||u.username||u.password)return false;return /\.(?:m3u8|mpd|mp4|m4v|webm|ogv|ogg|mov|mpeg|mpg|3gp|ts|mkv|avi|flv)$/i.test(u.pathname);}catch{return false;}}
+function normalizeChannelName(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
+function publicHttpsUrl(value){try{const u=new URL(value);if(u.protocol!=="https:"||u.username||u.password||(u.port&&u.port!=="443"))return null;let host=u.hostname.toLowerCase().replace(/^\[|\]$/g,"");if(!host||host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host.endsWith(".internal")||host.endsWith(".test"))return null;const ip=host.split(".");if(ip.length===4&&ip.every(x=>/^\d{1,3}$/.test(x)&&Number(x)<=255)){const a=Number(ip[0]),b=Number(ip[1]);if(a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===100&&b>=64&&b<=127))return null;}if(host.includes(":")&&(host==="::"||host==="::1"||host.startsWith("fc")||host.startsWith("fd")||/^fe[89ab]/i.test(host)||host.startsWith("ff")))return null;return u;}catch{return null;}}
+const COUNTRY_ALIASES={AR:"AR",ARG:"AR",ARGENTINA:"AR",BR:"BR",BRA:"BR",BRASIL:"BR",BRAZIL:"BR",CL:"CL",CHILE:"CL",UY:"UY",URUGUAY:"UY",PY:"PY",PARAGUAY:"PY",BO:"BO",BOLIVIA:"BO",PE:"PE",PERU:"PE",EC:"EC",ECUADOR:"EC",CO:"CO",COLOMBIA:"CO",VE:"VE",VENEZUELA:"VE",MX:"MX",MEXICO:"MX",CR:"CR",COSTARICA:"CR",CU:"CU",CUBA:"CU",DO:"DO",DOMINICANREPUBLIC:"DO",SV:"SV",ELSALVADOR:"SV",GT:"GT",GUATEMALA:"GT",HN:"HN",HONDURAS:"HN",NI:"NI",NICARAGUA:"NI",PA:"PA",PANAMA:"PA",PR:"PR",PUERTORICO:"PR"};
+function countryCode(value,fallback=""){const key=String(value||"").split(/[;,|]/)[0].trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[\s_-]+/g,"");return COUNTRY_ALIASES[key]||fallback;}
+function categoryFromGroup(value){const s=String(value||"").toLowerCase();if(/sport|deport|futbol|football/.test(s))return "sports";if(/news|notic|inform|24.?h/.test(s))return "news";if(/music|musica/.test(s))return "music";if(/educ|school|univers/.test(s))return "education";if(/culture|cultur/.test(s))return "culture";if(/relig|faith/.test(s))return "religion";if(/entertain|entreten|show|film|movie/.test(s))return "entertainment";return "general";}
+function parseM3UEntries(text,defaultCountry,feedUrl,evidence){const lines=String(text||"").replace(/^\uFEFF/,"").split(/\r?\n/),entries=[];let meta=null,skipped=0;for(const raw of lines){const line=raw.trim();if(!line)continue;if(line.startsWith("#EXTINF:")){const comma=line.indexOf(","),attrsText=line.slice(8,comma<0?undefined:comma),attrs={};for(const m of attrsText.matchAll(/([\w-]+)=["']([^"']*)["']/g))attrs[m[1].toLowerCase()]=m[2];const name=comma<0?"":line.slice(comma+1).trim();meta={name:name||attrs["tvg-name"]||attrs["tvg-id"]||"",logo:attrs["tvg-logo"]||"",group:attrs["group-title"]||"",country:attrs["tvg-country"]||"",language:attrs["tvg-language"]||""};continue;}if(line.startsWith("#")||!meta)continue;let u;try{u=new URL(line);}catch{skipped++;meta=null;continue;}if(!isVideoSource(u.href)||!publicHttpsUrl(u.href)){skipped++;meta=null;continue;}const country=countryCode(meta.country,defaultCountry);if(!country||!COUNTRIES.includes(country)||!meta.name){skipped++;meta=null;continue;}const logo=publicHttpsUrl(meta.logo);entries.push({name:meta.name.slice(0,100),country,category:categoryFromGroup(meta.group),language:meta.language.slice(0,40),logo:logo?logo.href:"",url:u.href,group:meta.group.slice(0,80),feedUrl:feedUrl||"",evidence});meta=null;if(entries.length>=500)break;}return {entries,skipped};}
 export async function onRequest(context){const {request,env}=context;if(!env.DB)return json({error:"service_unavailable"},503);const actor=await requireAdmin(request,env);if(!actor)return json({error:"forbidden"},403);const url=new URL(request.url),parts=url.pathname.split("/").filter(Boolean),resource=parts[2],id=parts[3];const now=Math.floor(Date.now()/1000);
 if(request.method==="GET"&&resource==="users"){const r=await env.DB.prepare("SELECT id,email,role,status,created_at FROM users ORDER BY created_at DESC LIMIT 500").all();const rows=r.results||[];const permissions=await env.DB.prepare("SELECT user_id,category FROM user_category_permissions").all();const channelPermissions=await env.DB.prepare("SELECT user_id,channel_id FROM user_channel_permissions").all();const channelConfigured=await env.DB.prepare("SELECT user_id FROM user_channel_settings").all();const configured=await env.DB.prepare("SELECT user_id FROM user_category_settings").all();const byUser={};for(const p of permissions.results||[])(byUser[p.user_id]??=[]).push(p.category);const configuredIds=new Set((configured.results||[]).map(x=>x.user_id));const byChannel={};for(const p of channelPermissions.results||[])(byChannel[p.user_id]??=[]).push(p.channel_id);const channelConfiguredIds=new Set((channelConfigured.results||[]).map(x=>x.user_id));return json({users:rows.map(u=>({...u,categories:configuredIds.has(u.id)?(byUser[u.id]||[]):CATEGORIES,channelIds:channelConfiguredIds.has(u.id)?(byChannel[u.id]||[]):null}))});}
 if(request.method==="GET"&&resource==="channels"){const r=await env.DB.prepare("SELECT id,name,country,category,enabled,created_at FROM channels ORDER BY name LIMIT 500").all();return json({channels:r.results||[]});}
@@ -50,7 +56,71 @@ if(request.method==="GET"&&resource==="discover"){
  }catch{return json({error:"discovery_unavailable"},502);}
 }
 if(!validOrigin(request))return json({error:"invalid_origin"},403);
-let body={};if(request.method!=="DELETE"){try{const raw=await request.text();if(new TextEncoder().encode(raw).length>32768)return json({error:"payload_too_large"},413);body=JSON.parse(raw);if(!body||typeof body!=="object"||Array.isArray(body))return json({error:"invalid_request"},400);}catch{return json({error:"invalid_request"},400);}}
+let body={};if(request.method!=="DELETE"){try{const raw=await request.text();const maxBytes=resource==="import-m3u"?1200000:32768;if(new TextEncoder().encode(raw).length>maxBytes)return json({error:"payload_too_large"},413);body=JSON.parse(raw);if(!body||typeof body!=="object"||Array.isArray(body))return json({error:"invalid_request"},400);}catch{return json({error:"invalid_request"},400);}}
+if(resource==="discover"&&request.method==="POST"){
+ const items=Array.isArray(body.items)?body.items:[];
+ if(!items.length||items.length>40)return json({error:"invalid_discovery_batch"},400);
+ const existingResult=await env.DB.prepare("SELECT id,name,country FROM channels LIMIT 1000").all();
+ const existing=new Set((existingResult.results||[]).map(x=>String(x.country||"")+"|"+normalizeChannelName(x.name)));
+ const incoming=new Set(),stmts=[];let added=0,duplicates=0,invalid=0;
+ for(const item of items){
+  const id=String(item?.id||""),name=String(item?.label||"").trim().slice(0,100),country=String(item?.country||"").toUpperCase();
+  if(!/^Q\d{1,12}$/.test(id)||!name||!COUNTRIES.includes(country)){invalid++;continue;}
+  const key=country+"|"+normalizeChannelName(name);if(existing.has(key)||incoming.has(key)){duplicates++;continue;}
+  incoming.add(key);
+  let logo="";const logoUrl=publicHttpsUrl(String(item.logo||""));if(logoUrl)logo=logoUrl.href;
+  const evidence="https://www.wikidata.org/wiki/"+id;
+  const metadata={url:"",language:String(item.language||"").slice(0,40),logo,description:String(item.description||"").slice(0,500),evidence,discoveryId:id};
+  const channelId=crypto.randomUUID();
+  stmts.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,"general",JSON.stringify([metadata]),0,now,now));
+  stmts.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_discovered_pending","channel",channelId,now));
+  existing.add(key);added++;
+ }
+ for(let i=0;i<stmts.length;i+=100)await env.DB.batch(stmts.slice(i,i+100));
+ return json({ok:true,added,duplicates,invalid});
+}
+if(resource==="import-m3u"&&request.method==="POST"){
+ if(body.rightsConfirmed!==true)return json({error:"rights_confirmation_required"},400);
+ const evidenceUrl=publicHttpsUrl(String(body.evidence||""));if(!evidenceUrl)return json({error:"invalid_evidence"},400);
+ const defaultCountry=countryCode(body.defaultCountry||"");if(body.defaultCountry&&!COUNTRIES.includes(defaultCountry))return json({error:"invalid_country"},400);
+ let playlistText="",feedUrl="";
+ if(typeof body.sourceUrl==="string"&&body.sourceUrl.trim()){
+  const feed=publicHttpsUrl(body.sourceUrl.trim());if(!feed)return json({error:"invalid_feed_url"},400);feedUrl=feed.href;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+  try{
+   const response=await fetch(feed.href,{method:"GET",redirect:"manual",signal:controller.signal,headers:{"Accept":"application/x-mpegURL,application/vnd.apple.mpegurl,audio/x-mpegurl,text/plain,*/*","User-Agent":"Lumina-TV/1.0 playlist importer"}});
+   if(response.status>=300&&response.status<400)return json({error:"feed_redirect_blocked"},400);
+   if(!response.ok)return json({error:"feed_fetch_failed",status:response.status},502);
+   const reader=response.body?.getReader();if(!reader)return json({error:"feed_empty"},502);
+   const decoder=new TextDecoder();let bytes=0;
+   while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;if(bytes>1048576){await reader.cancel();return json({error:"feed_too_large"},413);}playlistText+=decoder.decode(part.value,{stream:true});}
+   playlistText+=decoder.decode();
+  }catch{return json({error:"feed_fetch_failed"},502);}finally{clearTimeout(timer);}
+ }else if(typeof body.playlistText==="string"){playlistText=body.playlistText;const size=new TextEncoder().encode(playlistText).length;if(size>1048576)return json({error:"feed_too_large"},413);}
+ else return json({error:"feed_required"},400);
+ if(!playlistText.trim())return json({error:"feed_empty"},400);
+ const parsed=parseM3UEntries(playlistText,defaultCountry,feedUrl,evidenceUrl.href);if(!parsed.entries.length)return json({error:"no_supported_entries",skipped:parsed.skipped},400);
+ const existingResult=await env.DB.prepare("SELECT id,name,country,sources_json FROM channels LIMIT 1000").all();
+ const existing=new Map();for(const row of existingResult.results||[]){const key=String(row.country||"")+"|"+normalizeChannelName(row.name);let meta={};try{meta=JSON.parse(row.sources_json)[0]||{};}catch{}existing.set(key,{...row,meta});}
+ const statements=[],seen=new Set();let added=0,updated=0,duplicates=0;
+ for(const entry of parsed.entries){
+  const key=entry.country+"|"+normalizeChannelName(entry.name);if(seen.has(key)){duplicates++;continue;}seen.add(key);
+  const previous=existing.get(key);
+  const metadata={url:entry.url,language:entry.language,logo:entry.logo,description:entry.group?"Grupo: "+entry.group:"Importado desde lista M3U autorizada",evidence:evidenceUrl.href,feedUrl:entry.feedUrl};
+  if(previous){
+   if(!feedUrl||previous.meta.feedUrl!==feedUrl){duplicates++;continue;}
+   statements.push(env.DB.prepare("UPDATE channels SET name=?,country=?,category=?,sources_json=?,enabled=1,updated_at=? WHERE id=?").bind(entry.name,entry.country,entry.category,JSON.stringify([metadata]),now,previous.id));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_refresh","channel",previous.id,now));updated++;
+  }else{
+   const channelId=crypto.randomUUID();
+   statements.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(channelId,entry.name,entry.country,entry.category,JSON.stringify([metadata]),1,now,now));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_import","channel",channelId,now));
+   existing.set(key,{id:channelId,name:entry.name,country:entry.country,meta:{feedUrl}});added++;
+  }
+ }
+ for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
+ return json({ok:true,added,updated,duplicates,skipped:parsed.skipped,feedUrl});
+}
 if(resource==="users"&&id&&parts[4]==="channels"&&request.method==="PATCH"){
  const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();
  if(!target||target.role==="admin")return json({error:"not_found"},404);
