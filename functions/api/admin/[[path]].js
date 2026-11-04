@@ -372,6 +372,7 @@ if(resource==="users"&&id&&parts[4]==="channels"&&request.method==="PATCH"){
 if(resource==="users"&&id&&parts[4]==="categories"&&request.method==="PATCH"){const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();if(!target||target.role==="admin")return json({error:"not_found"},404);if(!Array.isArray(body.categories)||body.categories.length>CATEGORIES.length||body.categories.some(c=>!CATEGORIES.includes(c)))return json({error:"invalid_categories"},400);const stmts=[env.DB.prepare("DELETE FROM user_category_permissions WHERE user_id=?").bind(id),...body.categories.map(c=>env.DB.prepare("INSERT INTO user_category_permissions(user_id,category) VALUES(?,?)").bind(id,c)),env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"user_categories_update","user",id,now)];await env.DB.batch(stmts);return json({ok:true,categories:body.categories});}
 if(resource==="users"&&id&&parts[4]==="password"&&request.method==="PATCH"){const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();if(!target||target.role==="admin")return json({error:"not_found"},404);const password=body.password;if(typeof password!=="string"||password.length<12||password.length>128)return json({error:"invalid_password"},400);const salt=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,"0")).join("");const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode(salt),iterations:100000},key,256);const hash=Array.from(new Uint8Array(bits),x=>x.toString(16).padStart(2,"0")).join("");await env.DB.prepare("UPDATE users SET password_hash=?,password_salt=?,updated_at=? WHERE id=?").bind(hash,salt,now,id).run();await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(id).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"user_password_reset","user",id,now).run();return json({ok:true,sessions_revoked:true});}
 if(resource==="users"&&id&&request.method==="PATCH"){if(!["active","suspended"].includes(body.status))return json({error:"invalid_status"},400);const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();if(!target||target.role==="admin")return json({error:"not_found"},404);await env.DB.prepare("UPDATE users SET status=?,updated_at=? WHERE id=?").bind(body.status,now,id).run();await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(id).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"user_status_"+body.status,"user",id,now).run();return json({ok:true});}
+
 if(resource==="channels"&&id==="bulk-delete"&&request.method==="POST"){
  const all=body.all===true;
  let ids=[];
@@ -381,20 +382,38 @@ if(resource==="channels"&&id==="bulk-delete"&&request.method==="POST"){
   ids=(result.results||[]).map(row=>row.id);
  }else{
   if(!Array.isArray(body.ids)||body.ids.length<1||body.ids.length>500||body.ids.some(x=>typeof x!=="string"||x.length>80))return json({error:"invalid_channel_ids"},400);
-  ids=[...new Set(body.ids)];
-  const existing=await env.DB.prepare("SELECT id FROM channels WHERE id IN ("+ids.map(()=>"?").join(",")+")").bind(...ids).all();
-  ids=(existing.results||[]).map(row=>row.id);
+  const requested=[...new Set(body.ids)];
+  const existing=[];
+  for(let offset=0;offset<requested.length;offset+=80){
+   const batch=requested.slice(offset,offset+80);
+   const result=await env.DB.prepare("SELECT id FROM channels WHERE id IN ("+batch.map(()=>"?").join(",")+")").bind(...batch).all();
+   existing.push(...(result.results||[]).map(row=>row.id));
+  }
+  ids=existing;
  }
- if(!ids.length)return json({ok:true,deleted:0});
- const statements=[];
- for(const channelId of ids){
-  statements.push(env.DB.prepare("DELETE FROM channels WHERE id=?").bind(channelId));
-  statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,all?"channels_bulk_delete_all":"channel_bulk_delete","channel",channelId,now));
+ if(!ids.length)return json({ok:true,deleted:0,all});
+ let deleted=0;
+ try{
+  for(let offset=0;offset<ids.length;offset+=20){
+   const batch=ids.slice(offset,offset+20);
+   const placeholders=batch.map(()=>"?").join(",");
+   const statements=[
+    env.DB.prepare("DELETE FROM user_channel_permissions WHERE channel_id IN ("+placeholders+")").bind(...batch),
+    env.DB.prepare("DELETE FROM channels WHERE id IN ("+placeholders+")").bind(...batch)
+   ];
+   for(const channelId of batch){
+    statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,all?"channels_bulk_delete_all":"channel_bulk_delete","channel",channelId,now));
+   }
+   await env.DB.batch(statements);
+   deleted+=batch.length;
+  }
+ }catch(error){
+  const detail=String(error?.message||"database_error").replace(/[\\r\\n]+/g," ").slice(0,180);
+  return json({error:"channel_bulk_delete_failed",detail,deleted},500);
  }
- for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
- return json({ok:true,deleted:ids.length,all});
+ return json({ok:true,deleted,all});
 }
 if(resource==="channels"&&request.method==="POST"){const name=String(body.name||"").trim(),country=String(body.country||"").trim().toUpperCase(),category=String(body.category||"general"),source=String(body.source||"").trim(),language=String(body.language||"").trim().slice(0,40),logo=String(body.logo||"").trim(),description=String(body.description||"").trim().slice(0,500),evidence=String(body.evidence||"").trim();if(!name||name.length>100||!COUNTRIES.includes(country)||!CATEGORIES.includes(category)||!evidence||evidence.length>500)return json({error:"invalid_channel"},400);let ev,lg;try{ev=new URL(evidence);if(logo)lg=new URL(logo);}catch{return json({error:"invalid_channel"},400);}if(ev.protocol!=="https:"||ev.username||ev.password||(logo&&(lg.protocol!=="https:"||lg.username||lg.password)))return json({error:"invalid_channel"},400);const pending=body.pending===true;const duplicate=await env.DB.prepare("SELECT id FROM channels WHERE country=? AND name=? COLLATE NOCASE LIMIT 1").bind(country,name).first();if(duplicate)return json({error:"channel_exists"},409);let stream="";if(!pending){let u;try{u=new URL(source);}catch{return json({error:"invalid_source"},400);}if(!isVideoSource(u.href))return json({error:"invalid_source"},400);stream=u.href;}let verification=null;if(!pending){verification=await probeVideoSource(stream);if(!verification.ok)return json({error:"source_not_verified",probe:verification},422);}const channelId=crypto.randomUUID(),metadata={url:stream,language,logo:logo||"",description,evidence:ev.href,verification};await env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,category,JSON.stringify([metadata]),pending?0:1,now,now).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,pending?"channel_pending":"channel_create","channel",channelId,now).run();return json({ok:true,id:channelId,pending},201);}
 if(resource==="channels"&&id&&request.method==="PATCH"){const name=String(body.name||"").trim(),country=String(body.country||"").toUpperCase(),category=String(body.category||"general"),source=String(body.source||"").trim(),evidence=String(body.evidence||"").trim(),enabled=body.enabled===true;if(!name||name.length>100||!COUNTRIES.includes(country)||!CATEGORIES.includes(category)||!evidence)return json({error:"invalid_channel"},400);let ev;try{ev=new URL(evidence)}catch{return json({error:"invalid_channel"},400)}if(ev.protocol!=="https:"||ev.username||ev.password)return json({error:"invalid_channel"},400);const old=await env.DB.prepare("SELECT sources_json FROM channels WHERE id=?").bind(id).first();if(!old)return json({error:"not_found"},404);let oldSources=[];try{oldSources=JSON.parse(old.sources_json||"[]").filter(x=>x&&typeof x==="object")}catch{}const requested=Array.isArray(body.sources)?body.sources:[source];const urls=[...new Set(requested.map(x=>String(x||"").trim()).filter(Boolean))].slice(0,5);let nextSources=oldSources,failedSources=0;if(urls.length){const checked=[];for(const value of urls){let u;try{u=new URL(value)}catch{return json({error:"invalid_source"},400)}if(!isVideoSource(u.href))return json({error:"invalid_source"},400);const verification=enabled?await probeVideoSource(u.href):null;if(enabled&&!verification.ok){failedSources++;continue;}const previous=oldSources.find(x=>x.url===u.href)||{};checked.push({...previous,url:u.href,evidence:ev.href,verification:verification||previous.verification||null});}if(checked.length)nextSources=checked;}if(enabled&&!nextSources.some(x=>x.url))return json({error:"source_not_verified",failedSources},422);if(!nextSources.length)nextSources=[{url:"",evidence:ev.href}];const meta={...(nextSources[0]||{}),evidence:ev.href};for(const k of ["language","logo","description"])if(body[k]!==undefined)meta[k]=String(body[k]).slice(0,500);if(nextSources.length)nextSources[0]=meta;await env.DB.prepare("UPDATE channels SET name=?,country=?,category=?,sources_json=?,enabled=?,updated_at=? WHERE id=?").bind(name,country,category,JSON.stringify(nextSources),enabled?1:0,now,id).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_update","channel",id,now).run();return json({ok:true,enabled,sourceCount:nextSources.filter(x=>x.url).length,failedSources});}
-if(resource==="channels"&&id&&request.method==="DELETE"){await env.DB.prepare("DELETE FROM channels WHERE id=?").bind(id).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_delete","channel",id,now).run();return json({ok:true});}
+if(resource==="channels"&&id&&request.method==="DELETE"){const statements=[env.DB.prepare("DELETE FROM user_channel_permissions WHERE channel_id=?").bind(id),env.DB.prepare("DELETE FROM channels WHERE id=?").bind(id),env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_delete","channel",id,now)];try{await env.DB.batch(statements);}catch(error){return json({error:"channel_delete_failed",detail:String(error?.message||"database_error").replace(/[\\r\\n]+/g," ").slice(0,180)},500);}return json({ok:true});}
 return json({error:"not_found"},404);}
