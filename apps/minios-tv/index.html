@@ -78,7 +78,7 @@ function card(x,kind){
  else{poster.textContent=kind==="channel"?"📺":kind==="series"?"📚":"🎬";a.append(poster)}
  const body=document.createElement("div");body.className="cardbody";
  const title=document.createElement("strong");title.textContent=x.name||x.title||"Sin título";
- const meta=document.createElement("small");meta.textContent=x.meta||x.group||x.categoryLabel||kind;body.append(title,meta);a.append(body);
+ const meta=document.createElement("small");meta.textContent=x.meta||x.group||x.categoryLabel||kind;body.append(title,meta);const firstExternal=(Array.isArray(x.externalSources)?x.externalSources:[])[0];if(firstExternal){const access=document.createElement("small");const labels={free:"Gratis",free_ads:"Gratis con anuncios",free_partial:"Gratis parcial / con registro",free_device:"Gratis en dispositivo compatible",free_antenna:"Gratis por TDA / antena",free_ondemand:"Gratis a demanda"};access.textContent=labels[firstExternal.accessLevel]||"Acceso según proveedor";body.append(access);}a.append(body);
  const actions=document.createElement("div");actions.className="cardactions";
  const external=(Array.isArray(x.externalSources)?x.externalSources:[]).filter(item=>item&&/^https:\/\//i.test(item.website||""));
  const direct=(Array.isArray(x.sources)?x.sources:[]).filter(Boolean);
