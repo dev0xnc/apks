@@ -332,7 +332,7 @@ $("autoPlaylistSearch").onclick=async()=>{
   if(!item)return;
   button.disabled=true;button.textContent="Agregando…";
   try{
-   const result=await api("official-sports",{method:"POST",body:JSON.stringify({sourceId:item.id})});
+   const result=await api("official-sports",{method:"POST",body:JSON.stringify({sourceId:item.id,country:item.country})});
    button.textContent="✓ Opción agregada · OP";
    $("autoPlaylistStatus").textContent=item.name+" se agregó al catálogo con "+result.options+" enlace(s) oficial(es). Lúmina abrirá el sitio del proveedor.";
    await load();
