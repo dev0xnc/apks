@@ -41,6 +41,14 @@ Para una URL remota, Lúmina TV conserva su dirección en el navegador de admini
 
 La validación del servidor restringe las fuentes nuevas a HLS, MPEG-DASH, MP4, M4V, WebM y Ogg/OGV. Otros contenedores (MOV, TS, MKV, AVI y FLV) no se ofrecen como compatibles porque el soporte del navegador y del TV Box es irregular. Una respuesta técnicamente válida tampoco garantiza reproducción continua ni compatibilidad con todos los dispositivos.
 
+## Catálogo visible, prueba y administración de canales
+
+La API del catálogo devuelve a cada usuario únicamente las señales activas con una fuente HTTPS, y además una lista de fichas pendientes autorizadas por sus permisos. Las fichas pendientes muestran nombre, país, categoría y, cuando está disponible, la página oficial; nunca se les envía al navegador la URL de transmisión hasta que el canal esté activo. En TV en vivo se separan las señales reproducibles de las que siguen en preparación.
+
+El botón **Actualizar** muestra el estado de la consulta en la propia sección TV en vivo, junto con la hora de actualización y las cantidades activas y pendientes. En Administración, **Probar** abre un reproductor de vista previa para comprobar la señal en el navegador del administrador; esto no publica el canal ni reemplaza la revisión de autorización.
+
+La tabla de Administración permite seleccionar varios canales, eliminar la selección o borrar el catálogo completo. El borrado total requiere escribir exactamente `BORRAR TODOS LOS CANALES`. La eliminación de una ficha también elimina automáticamente sus permisos individuales asociados.
+
 ## Límites operativos y permisos
 
 - La importación remota acepta listas de hasta 1 MiB y bloquea redirecciones HTTP; se debe ingresar la URL final.
