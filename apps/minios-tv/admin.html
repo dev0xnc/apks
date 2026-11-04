@@ -17,10 +17,10 @@
 <p class="muted">La URL remota guardada se revisa cada 24 horas cuando abrís o mantenés abierta esta administración. No funciona como tarea en segundo plano si el navegador está cerrado. Se requieren enlaces HTTPS directos y reproducibles; algunas señales pueden depender de región, cookies o códecs del dispositivo.</p>
 </section>
 <section class="panel" id="automaticListDiscovery"><h2>Buscar listas automáticamente</h2>
-<p class="muted">Consulta un directorio comunitario que declara reunir señales oficiales y autorizadas, filtra países latinoamericanos y agrega canales con transmisión directa como pendientes. No activa ninguna señal automáticamente: revisá el sitio de la emisora y las condiciones de distribución antes de publicar.</p>
-<div class="row"><select id="autoListCountry"><option value="ALL">Toda Latinoamérica</option><option value="AR">Argentina</option><option value="BR">Brasil</option><option value="CL">Chile</option><option value="UY">Uruguay</option><option value="PY">Paraguay</option><option value="BO">Bolivia</option><option value="PE">Perú</option><option value="EC">Ecuador</option><option value="CO">Colombia</option><option value="VE">Venezuela</option><option value="MX">México</option><option value="CR">Costa Rica</option><option value="CU">Cuba</option><option value="DO">República Dominicana</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PR">Puerto Rico</option></select><select id="autoListCategory" aria-label="Categoría de señales"><option value="ALL">Todas las categorías</option><option value="sports">Deportes</option><option value="news">Noticias</option><option value="music">Música</option><option value="kids">Infantiles</option><option value="movies">Películas</option><option value="series">Series</option><option value="documentary">Documentales</option><option value="entertainment">Entretenimiento</option><option value="education">Educación</option><option value="culture">Cultura</option><option value="lifestyle">Estilo de vida</option><option value="religion">Religión</option></select><select id="autoListLimit" aria-label="Cantidad máxima de señales"><option value="5">Probar hasta 5 señales</option><option value="10">Probar hasta 10 señales</option><option value="20">Probar hasta 20 señales</option><option value="40">Probar hasta 40 señales</option><option value="60" selected>Probar hasta 60 señales</option></select><select id="autoListTime" aria-label="Tiempo máximo de búsqueda"><option value="8">Hasta 8 segundos</option><option value="12">Hasta 12 segundos</option><option value="18">Hasta 18 segundos</option><option value="25" selected>Hasta 25 segundos</option></select><button type="button" id="autoPlaylistSearch">Buscar y validar transmisiones</button></div>
+<p class="muted">Busca páginas de proveedores deportivos oficiales. Las opciones OP abren el sitio del titular directamente: Lúmina no copia, extrae ni retransmite sus señales. Revisá la disponibilidad por país y las condiciones de cada servicio.</p>
+<div class="row"><select id="autoListCountry"><option value="ALL">Toda Latinoamérica</option><option value="AR">Argentina</option><option value="BR">Brasil</option><option value="CL">Chile</option><option value="UY">Uruguay</option><option value="PY">Paraguay</option><option value="BO">Bolivia</option><option value="PE">Perú</option><option value="EC">Ecuador</option><option value="CO">Colombia</option><option value="VE">Venezuela</option><option value="MX">México</option><option value="CR">Costa Rica</option><option value="CU">Cuba</option><option value="DO">República Dominicana</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PR">Puerto Rico</option></select><select id="autoListCategory" aria-label="Categoría de señales"><option value="ALL">Todas las categorías</option><option value="sports">Deportes</option><option value="news">Noticias</option><option value="music">Música</option><option value="kids">Infantiles</option><option value="movies">Películas</option><option value="series">Series</option><option value="documentary">Documentales</option><option value="entertainment">Entretenimiento</option><option value="education">Educación</option><option value="culture">Cultura</option><option value="lifestyle">Estilo de vida</option><option value="religion">Religión</option></select><select id="autoListLimit" aria-label="Cantidad máxima de señales"><option value="5">Probar hasta 5 señales</option><option value="10">Probar hasta 10 señales</option><option value="20">Probar hasta 20 señales</option><option value="40">Probar hasta 40 señales</option><option value="60" selected>Probar hasta 60 señales</option></select><select id="autoListTime" aria-label="Tiempo máximo de búsqueda"><option value="8">Hasta 8 segundos</option><option value="12">Hasta 12 segundos</option><option value="18">Hasta 18 segundos</option><option value="25" selected>Hasta 25 segundos</option></select><button type="button" id="autoPlaylistSearch">Buscar fuentes oficiales de deportes</button></div>
 <p id="autoPlaylistStatus" class="status" role="status"></p><div id="autoPlaylistResults" aria-live="polite"></div>
-<p class="muted">La cantidad limita cuántas transmisiones se prueban y el tiempo limita la duración de cada búsqueda. Solo se guardan las que responden y entregan un formato reconocido. Quedan pendientes de autorización y activación. El directorio es comunitario: la prueba técnica no acredita derechos, CORS ni reproducción en todos los dispositivos.</p>
+<p class="muted">Los resultados son enlaces a reproductores o plataformas oficiales. Se agrupan por canal/proveedor y se numeran como OP 1, OP 2, OP 3… No son enlaces directos extraídos ni se reproducen dentro de Lúmina; cada proveedor aplica sus propios requisitos, región y plan.</p>
 </section>
 <section class="panel"><h2>Agregar canal autorizado</h2><form id="channel">
 <div class="row"><input id="name" placeholder="Nombre del canal" required maxlength="100"><select id="country" required><option value="">País</option><option value="AR">Argentina</option><option value="BR">Brasil</option><option value="CL">Chile</option><option value="UY">Uruguay</option><option value="PY">Paraguay</option><option value="BO">Bolivia</option><option value="PE">Perú</option><option value="EC">Ecuador</option><option value="CO">Colombia</option><option value="VE">Venezuela</option><option value="MX">México</option><option value="CR">Costa Rica</option><option value="CU">Cuba</option><option value="DO">República Dominicana</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PR">Puerto Rico</option></select><select id="category"><option value="general">General</option><option value="sports">Deportes</option><option value="news">Noticias</option><option value="music">Música</option><option value="kids">Infantiles</option><option value="movies">Películas</option><option value="series">Series</option><option value="documentary">Documentales</option><option value="entertainment">Entretenimiento</option><option value="education">Educación</option><option value="culture">Cultura</option><option value="lifestyle">Estilo de vida</option><option value="religion">Religión</option></select></div>
@@ -259,7 +259,7 @@ $("autoDiscover").onclick=async()=>{
  const button=$("autoDiscover");button.disabled=true;
  let turn=0;
  try{turn=Math.max(0,Number(localStorage.getItem(DISCOVERY_ROTATION_KEY)||"0")||0);localStorage.setItem(DISCOVERY_ROTATION_KEY,String(turn+1));}catch{}
- const providers=["iptv-org","wikidata","teleonline"];
+ const providers=["iptv-org","wikidata"];
  const provider=providers[turn%providers.length];
  const showSource=name=>{$("results").textContent="Fuente consultada: "+name+". "+$("results").textContent;};
  try{
@@ -312,26 +312,36 @@ $("autoDiscover").onclick=async()=>{
 };
 $("autoPlaylistSearch").onclick=async()=>{
  const button=$("autoPlaylistSearch"),status=$("autoPlaylistStatus"),country=$("autoListCountry").value;
- const limit=Number($("autoListLimit").value),timeBudgetSeconds=Number($("autoListTime").value),category=$("autoListCategory").value;
+ const query=$("query")?.value?.trim()||"";
  button.disabled=true;$("autoPlaylistResults").replaceChildren();
- status.textContent="Consultando el directorio y comprobando hasta "+limit+" señales (máximo "+timeBudgetSeconds+" segundos)…";
+ status.textContent="Buscando proveedores deportivos oficiales…";
  try{
-  const result=await api("discover-playlists",{method:"POST",body:JSON.stringify({country,category,limit,timeBudgetSeconds})});
-  const elapsed=(Number(result.elapsedMs||0)/1000).toFixed(1);
-  const candidates=Number(result.candidatesFound||0);
-  const diagnostics="Lectura: "+(result.countriesRead||0)+" países en el directorio · "+(result.countriesMatched||0)+" coincidentes · "+(result.channelsScanned||0)+" fichas revisadas · "+(result.channelsWithOptions||0)+" con opciones · "+(result.directOptionsFound||0)+" enlaces directos compatibles con el filtro.";
-  if(!candidates){
-   status.textContent="Directorio consultado en "+elapsed+" s, pero no se encontraron candidatos para los filtros elegidos. "+diagnostics+" Probá «Toda Latinoamérica» y «Todas las categorías».";
-  }else{
-   status.textContent="Búsqueda terminada en "+elapsed+" s: "+candidates+" candidatos encontrados, "+result.checked+" comprobados, "+result.verified+" técnicamente compatibles y "+(result.verifiedOptions||0)+" opciones de reproducción, "+result.added+" canales nuevos pendientes, "+result.enriched+" fichas completadas, "+result.failed+" rechazados y "+result.notChecked+" sin comprobar por límite de tiempo. "+diagnostics;
-  }
-  const results=result.results||[];
-  $("autoPlaylistResults").innerHTML=results.map(x=>'<div class="result"><strong>'+esc(x.name)+' · '+esc(x.country)+' · '+esc(x.category||"general")+'</strong><span class="muted">'+(x.ok?"✓ Compatible · "+esc(x.kind)+" · "+(x.options||1)+" opciones":"✕ No validada")+' — '+esc(x.message||"")+'</span></div>').join("")||'<p class="muted">'+(candidates?"Se encontraron candidatos, pero ninguno alcanzó la etapa de comprobación.":"No hubo señales directas compatibles. Las fichas solo se incorporan cuando tienen enlaces directos reproducibles; los enlaces de plataformas de vídeo se excluyen de esta prueba.")+'</p>';
-  await load();
- }catch(error){status.textContent="No se pudo completar la búsqueda: "+error.message;}
+  const result=await api("discover-all-playlists",{method:"POST",body:JSON.stringify({country,q:query})});
+  const items=result.results||[];
+  window.officialSportsResults=Object.fromEntries(items.map(item=>[item.id,item]));
+  status.textContent=items.length+" opciones oficiales encontradas. Se abrirán desde el sitio de cada proveedor; no se importan señales de terceros.";
+  $("autoPlaylistResults").innerHTML=items.map(item=>'<div class="result"><strong>'+esc(item.name)+' · '+esc(item.provider)+'</strong><span class="muted">'+esc(item.access)+'</span><p>'+esc(item.description)+'</p><div><a target="_blank" rel="noopener noreferrer" href="'+esc(item.website)+'">Abrir sitio oficial</a></div><button type="button" data-add-official="'+esc(item.id)+'">＋ Añadir como opción oficial</button></div>').join("")||'<p class="muted">No se encontraron proveedores oficiales para ese filtro.</p>';
+ }catch(error){status.textContent="No se pudo buscar: "+error.message;}
  finally{button.disabled=false;}
-};
-const FEED_STORAGE_KEY="lumina_tv_authorized_feed_v1";
+ };
+ $("autoPlaylistResults").addEventListener("click",async event=>{
+  const button=event.target.closest("[data-add-official]");
+  if(!button)return;
+  const item=window.officialSportsResults?.[button.dataset.addOfficial];
+  if(!item)return;
+  button.disabled=true;button.textContent="Agregando…";
+  try{
+   const result=await api("official-sports",{method:"POST",body:JSON.stringify({sourceId:item.id})});
+   button.textContent="✓ Opción agregada · OP";
+   $("autoPlaylistStatus").textContent=item.name+" se agregó al catálogo con "+result.options+" enlace(s) oficial(es). Lúmina abrirá el sitio del proveedor.";
+   await load();
+  }catch(error){
+   button.disabled=false;
+   button.textContent="＋ Añadir como opción oficial";
+   $("autoPlaylistStatus").textContent="No se pudo agregar: "+error.message;
+  }
+ });
+ const FEED_STORAGE_KEY="lumina_tv_authorized_feed_v1";
 function readSavedFeed(){try{return JSON.parse(localStorage.getItem(FEED_STORAGE_KEY)||"null")}catch{return null}}
 async function refreshSavedFeed(force=false){
  const config=readSavedFeed();if(!config||!config.sourceUrl||!config.evidence)return;
