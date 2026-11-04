@@ -4,7 +4,7 @@ async function requireAdmin(request,env){const m=(request.headers.get("Cookie")|
 function validOrigin(request){try{return request.url.startsWith("https://")&&request.headers.get("Origin")===new URL(request.url).origin;}catch{return false;}}
 const CATEGORIES=["general","sports","news","entertainment","education","culture","music","religion"];
 const COUNTRIES=["AR","BR","CL","UY","PY","BO","PE","EC","CO","VE","MX","CR","CU","DO","SV","GT","HN","NI","PA","PR"];
-function isVideoSource(value){try{const u=new URL(value);if(u.protocol!=="https:"||u.username||u.password)return false;return /\.(?:m3u8|mpd|mp4|m4v|webm|ogv|ogg|mov|mpeg|mpg|3gp|ts|mkv|avi|flv)$/i.test(u.pathname);}catch{return false;}}
+function isVideoSource(value){try{const u=new URL(value);if(u.protocol!=="https:"||u.username||u.password)return false;return /\.(?:m3u8|mpd|mp4|m4v|webm|ogv|ogg)$/i.test(u.pathname);}catch{return false;}}
 function normalizeChannelName(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
 function publicHttpsUrl(value){try{const u=new URL(value);if(u.protocol!=="https:"||u.username||u.password||(u.port&&u.port!=="443"))return null;let host=u.hostname.toLowerCase().replace(/^\[|\]$/g,"");if(!host||host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host.endsWith(".internal")||host.endsWith(".test"))return null;const ip=host.split(".");if(ip.length===4&&ip.every(x=>/^\d{1,3}$/.test(x)&&Number(x)<=255)){const a=Number(ip[0]),b=Number(ip[1]);if(a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===100&&b>=64&&b<=127))return null;}if(host.includes(":")&&(host==="::"||host==="::1"||host.startsWith("fc")||host.startsWith("fd")||/^fe[89ab]/i.test(host)||host.startsWith("ff")))return null;return u;}catch{return null;}}
 const DIRECT_VIDEO_EXTENSIONS=["m3u8","mpd","mp4","m4v","webm","ogv","ogg"];
@@ -153,28 +153,30 @@ if(resource==="discover-playlists"&&request.method==="POST"){
     const name=String(item?.name||"").trim().slice(0,100);
     if(!name){skipped++;continue;}
     const options=Array.isArray(item.options)?item.options:[];
-    const stream=options.map(option=>publicHttpsUrl(String(option?.url||""))).find(candidate=>candidate&&DIRECT_VIDEO_EXTENSIONS.includes(directVideoExtension(candidate)));
-    if(!stream){withoutStream++;continue;}
+    const priority={m3u8:0,mpd:1,mp4:2,m4v:3,webm:4,ogv:5,ogg:6};
+    const streams=[...new Set(options.map(option=>publicHttpsUrl(String(option?.url||""))).filter(candidate=>candidate&&DIRECT_VIDEO_EXTENSIONS.includes(directVideoExtension(candidate))).map(candidate=>candidate.href))].sort((a,b)=>priority[directVideoExtension(new URL(a))]-priority[directVideoExtension(new URL(b))]).slice(0,2);
+    if(!streams.length){withoutStream++;continue;}
     const key=country+"|"+normalizeChannelName(name);
     if(seen.has(key)){skipped++;continue;}
     seen.add(key);
     const website=publicHttpsUrl(String(item.web||""));
     const logoUrl=publicHttpsUrl(String(item.logo||""));
-    candidates.push({name,country,category:categoryFromGroup(ambit.name||""),url:stream.href,logo:logoUrl?logoUrl.href:"",website:website?website.href:"",evidence:website?website.href:directoryPage});
+    candidates.push({name,country,category:categoryFromGroup(ambit.name||""),urls:streams,logo:logoUrl?logoUrl.href:"",website:website?website.href:"",evidence:website?website.href:directoryPage});
    }
   }
  }
  const checked=[];
  let cursor=0;
- while(cursor<candidates.length&&checked.length<limit&&Date.now()<deadline-400){
-  const batchSize=Math.min(4,limit-checked.length,candidates.length-cursor);
+ while(cursor<candidates.length&&checked.length<limit&&Date.now()<deadline-1000){
+  const batchSize=Math.min(3,limit-checked.length,candidates.length-cursor);
   if(batchSize<1)break;
   const batch=candidates.slice(cursor,cursor+batchSize);
   const results=await Promise.all(batch.map(async item=>{
    const remaining=deadline-Date.now()-150;
-   if(remaining<700)return {...item,probe:{ok:false,code:"time_budget",message:"Se alcanzó el tiempo máximo de esta búsqueda."}};
-   const probe=await probeVideoSource(item.url,Math.min(3000,remaining));
-   return {...item,probe};
+   if(remaining<700)return {...item,url:item.urls[0],probe:{ok:false,code:"time_budget",message:"Se alcanzó el tiempo máximo de esta búsqueda."}};
+   const probes=await Promise.all(item.urls.map(url=>probeVideoSource(url,Math.min(2600,remaining))));
+   const successful=probes.findIndex(probe=>probe.ok),chosen=successful>=0?successful:0;
+   return {...item,url:item.urls[chosen],probe:probes[chosen],alternativesChecked:probes.length};
   }));
   checked.push(...results);cursor+=batch.length;
  }
