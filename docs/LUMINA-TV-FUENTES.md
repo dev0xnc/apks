@@ -8,13 +8,16 @@ Una ficha pendiente no se expone en el catálogo de usuarios hasta que el admini
 
 ## Buscar listas automáticamente
 
-En Administración, el botón **Buscar listas y agregar canales pendientes** consulta el catálogo estructurado de Teleonline (`https://teleonline.github.io/listas/tv.json`), declarado por su mantenedor como una recopilación de emisiones oficiales y autorizadas. Lúmina filtra los 20 países latinoamericanos configurados y toma únicamente enlaces HTTPS directos con extensiones de vídeo admitidas.
+En Administración, **Buscar listas automáticamente** consulta el catálogo estructurado de Teleonline (\`https://raw.githubusercontent.com/teleonline/listas/main/tv.json\`). La interfaz permite elegir país, cantidad máxima de señales a comprobar (5, 10, 20, 40 o 60) y presupuesto de tiempo (8, 12, 18 o 25 segundos). El servidor limita la cantidad real de comprobaciones y sus tiempos de espera; si se alcanza el límite, informa cuántas candidatas quedaron sin comprobar.
 
-La búsqueda omite señales servidas mediante reproductores incrustados, plataformas o formatos que el reproductor no admite directamente. Los canales nuevos se crean deshabilitados; si ya existe una ficha sin señal, se completa con la URL encontrada y se mantiene deshabilitada hasta que el administrador la revise. Los duplicados que ya tienen una fuente no se sobrescriben.
+Antes de guardar una fuente, Lúmina realiza una petición HTTPS de lectura parcial, sin seguir redirecciones. Para HLS verifica que el contenido contenga \`#EXTM3U\`; para MPEG-DASH comprueba el manifiesto \`<MPD>\`; para vídeo directo exige un tipo MIME de vídeo reconocido. Se priorizan los formatos que el reproductor ya gestiona (HLS con HLS.js o soporte nativo, MPEG-DASH con dash.js y archivos directos compatibles). Las fuentes que no responden, redirigen, devuelven una página HTML o no coinciden con el formato se muestran como no validadas y no se incorporan como señales verificadas.
 
-El directorio es una fuente comunitaria y sus declaraciones no sustituyen una comprobación independiente de los derechos, restricciones regionales, términos de la emisora y disponibilidad real. Antes de activar una señal, revisar la web oficial registrada, confirmar que su retransmisión está autorizada y probarla en el dispositivo. La búsqueda nunca activa canales automáticamente.
+Los canales nuevos se guardan deshabilitados. Si ya existe una ficha sin fuente, se completa y sigue deshabilitada. Una fuente encontrada no se usa para reemplazar otra que ya estaba configurada. El panel muestra la marca **Compatible verificada · pendiente de revisión** cuando la comprobación de servidor fue satisfactoria. La creación o activación manual de una señal también exige superar esta comprobación técnica.
+
+**Alcance de la prueba:** la comprobación de servidor confirma que la URL respondió y que su contenido parece corresponder al formato anunciado; no puede confirmar por sí sola CORS, reproducción en todos los navegadores o TV Box, restricciones geográficas, cookies, DRM, disponibilidad posterior ni derechos de distribución. El administrador debe revisar la página oficial y confirmar la autorización antes de activar. La búsqueda nunca activa canales automáticamente.
 
 Fuente de datos: [Teleonline, catálogo público y su apartado de cumplimiento legal](https://github.com/teleonline/listas).
+
 ## Importar una lista M3U autorizada
 
 En Administración, usar el panel **Importar / actualizar catálogo M3U**:
