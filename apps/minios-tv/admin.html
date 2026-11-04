@@ -5,7 +5,7 @@
 </style></head><body><main>
 <div class="top"><div><h1>Lúmina TV · Administración</h1><p class="muted">Gestioná usuarios y señales autorizadas.</p></div><div><a href="./index.html">Volver a TV</a> <button id="logout">Cerrar sesión</button></div></div>
 <section class="panel"><h2>Usuarios</h2><p class="muted">Suspender una cuenta revoca automáticamente todas sus sesiones.</p><input id="userSearch" placeholder="Buscar por correo"><div id="users">Cargando…</div></section>
-<section class="panel"><h2>Permisos individuales y cuentas</h2><p class="muted">Elegí una cuenta para limitar sus canales y, si hace falta, restablecer su contraseña.</p><select id="manageUser"></select><div id="channelPermissions"></div><button type="button" id="saveChannelPermissions">Guardar canales permitidos</button><div class="row"><input id="temporaryPassword" type="password" minlength="12" placeholder="Nueva contraseña temporal (12+ caracteres)"><button type="button" id="resetUserPassword">Restablecer contraseña</button></div><p class="muted">Al cambiar una contraseña se revocan las sesiones de esa cuenta.</p></section><section class="panel"><h2>Descubrimiento de canales</h2><p class="muted">Busca metadatos públicos de emisoras y prepara fichas. No obtiene ni habilita transmisiones automáticamente: cada señal debe proceder de una fuente oficial o autorizada y ser verificada antes de publicarse.</p><button type="button" id="autoDiscover">Buscar emisoras en fuentes públicas (Latinoamérica)</button><form id="discover" class="row"><input id="query" placeholder="Ej.: TV Pública, Telefe, Canal 13…" minlength="2" required><button>Buscar canales</button></form><div id="results"></div></section>
+<section class="panel"><h2>Permisos individuales y cuentas</h2><p class="muted">Elegí qué señales puede ver cada cuenta. “Todos los canales” también habilita automáticamente los canales nuevos que se incorporen en el futuro.</p><select id="manageUser"></select><div id="channelPermissions"></div><div class="row"><button type="button" id="selectCurrentChannels">Seleccionar todos los actuales</button><button type="button" id="clearChannelSelection">Quitar todos</button></div><button type="button" id="saveChannelPermissions">Guardar canales permitidos</button><div class="row"><input id="temporaryPassword" type="password" minlength="12" placeholder="Nueva contraseña temporal (12+ caracteres)"><button type="button" id="resetUserPassword">Restablecer contraseña</button></div><p class="muted">Al cambiar una contraseña se revocan las sesiones de esa cuenta.</p></section><section class="panel"><h2>Descubrimiento de canales</h2><p class="muted">Busca metadatos públicos de emisoras y prepara fichas. No obtiene ni habilita transmisiones automáticamente: cada señal debe proceder de una fuente oficial o autorizada y ser verificada antes de publicarse.</p><button type="button" id="autoDiscover">Buscar emisoras en fuentes públicas (Latinoamérica)</button><form id="discover" class="row"><input id="query" placeholder="Ej.: TV Pública, Telefe, Canal 13…" minlength="2" required><button>Buscar canales</button></form><div id="results"></div></section>
 <section class="panel"><h2>Agregar canal autorizado</h2><form id="channel">
 <div class="row"><input id="name" placeholder="Nombre del canal" required maxlength="100"><select id="country" required><option value="">País</option><option value="AR">Argentina</option><option value="BR">Brasil</option><option value="CL">Chile</option><option value="UY">Uruguay</option><option value="PY">Paraguay</option><option value="BO">Bolivia</option><option value="PE">Perú</option><option value="EC">Ecuador</option><option value="CO">Colombia</option><option value="VE">Venezuela</option><option value="MX">México</option><option value="CR">Costa Rica</option><option value="CU">Cuba</option><option value="DO">República Dominicana</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PR">Puerto Rico</option></select><select id="category"><option value="general">General</option><option value="sports">Deportes</option><option value="news">Noticias</option><option value="entertainment">Entretenimiento</option><option value="education">Educación</option><option value="culture">Cultura</option><option value="music">Música</option><option value="religion">Religión</option></select></div>
 <div class="row"><input id="language" placeholder="Idioma (ej. Español)"><input id="logo" type="url" placeholder="Logo HTTPS (opcional)"></div>
@@ -33,19 +33,57 @@ async function loadPermissionPanel(){
  try{
   const [u,c]=await Promise.all([fetch("/api/admin/users",{credentials:"same-origin"}).then(r=>r.json()),fetch("/api/admin/channels",{credentials:"same-origin"}).then(r=>r.json())]);
   permissionUsers=u.users||[];permissionChannels=c.channels||[];
-  const sel=$("manageUser");sel.innerHTML=permissionUsers.filter(x=>x.role!=="admin").map(x=>'<option value="'+x.id+'">'+x.email+'</option>').join("");
+  const sel=$("manageUser"),previous=sel.value;sel.innerHTML=permissionUsers.filter(x=>x.role!=="admin").map(x=>'<option value="'+String(x.id).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'">'+String(x.email).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</option>').join("");
+  if([...sel.options].some(option=>option.value===previous))sel.value=previous;
   renderPermissionChoices();
  }catch(e){$("status").textContent="No se pudieron cargar permisos: "+e.message}
 }
 function renderPermissionChoices(){
  const u=permissionUsers.find(x=>x.id===$("manageUser").value);
- $("channelPermissions").innerHTML=u?'<label><input type="checkbox" id="allChannels" '+(u.channelIds===null?'checked':'')+'> Permitir todos los canales (sin restricción individual)</label>'+permissionChannels.map(c=>'<label style="display:block;margin:6px"><input type="checkbox" data-channel-choice="'+c.id+'" '+(u.channelIds===null||u.channelIds.includes(c.id)?'checked':'')+'> '+c.name+' · '+c.country+' · '+c.category+(c.enabled?'':' · pendiente')+'</label>').join(""):'<p>No hay cuentas de usuario normales todavía.</p>';
+ if(!u){
+  $("channelPermissions").innerHTML='<p>No hay cuentas de usuario normales todavía.</p>';
+  return;
+ }
+ const all=u.channelIds===null;
+ const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ $("channelPermissions").innerHTML=
+  '<div class="result"><label><input type="checkbox" id="allChannels" '+(all?"checked":"")+'> <strong>Permitir todos los canales, incluidos los futuros</strong></label><p class="muted">Activado: la cuenta verá todo canal habilitado ahora o agregado más adelante. Desactivado: se aplicará únicamente la selección de abajo.</p></div>'+
+  '<div id="channelChoiceList">'+permissionChannels.map(c=>'<label style="display:block;margin:6px"><input type="checkbox" data-channel-choice="'+esc(c.id)+'" '+(all||u.channelIds.includes(c.id)?"checked":"")+(all?" disabled":"")+'> '+esc(c.name)+' · '+esc(c.country)+' · '+esc(c.category)+(c.enabled?"":" · pendiente de activación")+'</label>').join("")+'</div>'+
+  '<p class="muted">Los canales pendientes no se muestran a los usuarios hasta que se verifique y active su transmisión. “Seleccionar todos los actuales” crea una lista fija; no incluye canales futuros.</p>';
+ const master=$("allChannels");
+ master.addEventListener("change",()=>{
+  const boxes=[...document.querySelectorAll("[data-channel-choice]")];
+  boxes.forEach(box=>{box.disabled=master.checked;box.checked=master.checked;});
+ });
 }
 $("manageUser").addEventListener("change",renderPermissionChoices);
 $("saveChannelPermissions").addEventListener("click",async()=>{
  const id=$("manageUser").value;if(!id)return;
- const channelIds=$("allChannels").checked?permissionChannels.map(x=>x.id):[...document.querySelectorAll("[data-channel-choice]:checked")].map(x=>x.dataset.channelChoice);
- try{const r=await fetch("/api/admin/users/"+encodeURIComponent(id)+"/channels",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({channelIds})});const d=await r.json();if(!r.ok)throw Error(d.error||"No se pudieron guardar los permisos");$("status").textContent="Permisos individuales guardados.";}catch(e){$("status").textContent=e.message}
+ const all=$("allChannels")?.checked===true;
+ const channelIds=all?null:[...document.querySelectorAll("[data-channel-choice]:checked")].map(x=>x.dataset.channelChoice);
+ const button=$("saveChannelPermissions");button.disabled=true;
+ try{
+  const r=await fetch("/api/admin/users/"+encodeURIComponent(id)+"/channels",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({channelIds})});
+  const d=await r.json();if(!r.ok)throw Error(d.error||"No se pudieron guardar los permisos");
+  const selected=permissionUsers.find(x=>x.id===id);if(selected)selected.channelIds=d.channelIds;
+  renderPermissionChoices();
+  $("status").textContent=all
+   ?"Acceso general guardado: también verá los canales que se agreguen en el futuro."
+   :channelIds.length
+    ?"Lista personalizada guardada: "+channelIds.length+" canal(es) permitido(s)."
+    :"Guardado: esta cuenta no tiene canales permitidos.";
+ }catch(e){$("status").textContent=e.message}
+ finally{button.disabled=false;}
+});
+$("selectCurrentChannels").addEventListener("click",()=>{
+ const master=$("allChannels");if(!master)return;
+ master.checked=false;master.dispatchEvent(new Event("change"));
+ document.querySelectorAll("[data-channel-choice]").forEach(box=>{box.disabled=false;box.checked=true;});
+});
+$("clearChannelSelection").addEventListener("click",()=>{
+ const master=$("allChannels");if(!master)return;
+ master.checked=false;master.dispatchEvent(new Event("change"));
+ document.querySelectorAll("[data-channel-choice]").forEach(box=>{box.disabled=false;box.checked=false;});
 });
 $("resetUserPassword").addEventListener("click",async()=>{
  const id=$("manageUser").value,password=$("temporaryPassword").value;if(!id)return alert("Seleccioná una cuenta.");if(password.length<12)return alert("Usá al menos 12 caracteres.");if(!confirm("Se cambiará la contraseña y se cerrarán todas las sesiones de esta cuenta. ¿Continuar?"))return;
