@@ -121,8 +121,8 @@ if(resource==="discover"&&request.method==="POST"){
 }
 if(resource==="discover-playlists"&&request.method==="POST"){
  const selectedCountry=String(body.country||"ALL").toUpperCase();
- const rawCategory=String(body.category||"ALL").trim();
- const selectedCategory=rawCategory.toUpperCase()==="ALL"?"ALL":rawCategory.toLowerCase();
+ const rawCategory=String(body.category??"ALL").trim();
+ const selectedCategory=!rawCategory||rawCategory.toLowerCase()==="all"?"ALL":rawCategory.toLowerCase();
  if(selectedCountry!=="ALL"&&!COUNTRIES.includes(selectedCountry))return json({error:"invalid_country"},400);
  if(selectedCategory!=="ALL"&&!CATEGORIES.includes(selectedCategory))return json({error:"invalid_category"},400);
  const requestedLimit=Number(body.limit??20);
