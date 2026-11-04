@@ -71,13 +71,13 @@ function parseM3UEntries(text,defaultCountry,feedUrl,evidence){const lines=Strin
 
 
 const OFFICIAL_SPORTS_SOURCES=[
- {id:"tyc-sports-play",name:"TyC Sports Play",country:"AR",category:"sports",website:"https://play.tycsports.com/",provider:"TyC Sports Play · sitio oficial",access:"Registro gratis; la señal lineal 24 h requiere usuario de cableoperador",description:"Fútbol de Selección, Copa Argentina y Ascenso, además de básquet, vóley, tenis y otros eventos disponibles según programación."},
+ {id:"tyc-sports-play",name:"TyC Sports Play",country:"AR",global:true,category:"sports",website:"https://play.tycsports.com/",provider:"TyC Sports Play · sitio oficial",access:"Registro gratis; la señal lineal 24 h requiere usuario de cableoperador",description:"Fútbol de Selección, Copa Argentina y Ascenso, además de básquet, vóley, tenis y otros eventos disponibles según programación."},
  {id:"deportv-live",name:"DeporTV",country:"AR",category:"sports",website:"https://deportv.gob.ar/vivo",provider:"DeporTV · sitio oficial",access:"Señal oficial · disponibilidad según TDA, cable y región",description:"Deportes argentinos: fútbol, básquet, motor y otras disciplinas. Se abre el reproductor oficial de DeporTV."},
- {id:"fifa-plus",name:"FIFA+",country:"AR",category:"sports",website:"https://www.dazn.com/es-AR/fifaplus",provider:"FIFA+ en DAZN",access:"Gratis con registro · catálogo y partidos según país",description:"Fútbol internacional, juveniles, selecciones, torneos y archivo. La disponibilidad de cada partido depende del territorio."},
+ {id:"fifa-plus",name:"FIFA+",country:"AR",global:true,excludedCountries:["CU"],category:"sports",website:"https://www.dazn.com/es-AR/fifaplus",provider:"FIFA+ en DAZN",access:"Gratis con registro · catálogo y partidos según país",description:"Fútbol internacional, juveniles, selecciones, torneos y archivo. La disponibilidad de cada partido depende del territorio."},
  {id:"lpf-play",name:"LPF Play",country:"AR",category:"sports",website:"https://www.lpfplay.com",provider:"AFA · LPF Play",access:"Plan gratuito limitado · partidos en vivo según suscripción",description:"Plataforma oficial del fútbol argentino para categorías como Ascenso, Femenino, Juveniles y Proyección; no incluye la Primera División en el plan gratuito."},
- {id:"afa-seleccion",name:"AFA Selección",country:"AR",category:"sports",website:"https://www.youtube.com/@AFASeleccion",provider:"AFA · canal oficial",access:"Gratis · transmisiones y contenido cuando se publiquen",description:"Canal oficial de las selecciones argentinas. Los directos dependen de los eventos publicados por AFA."},
- {id:"fiba-youtube",name:"FIBA",country:"AR",category:"sports",website:"https://www.youtube.com/@FIBA",provider:"FIBA · canal oficial",access:"Gratis · directos seleccionados",description:"Básquet internacional, torneos y eventos oficiales cuando FIBA los emite en abierto."},
- {id:"fiba-courtside",name:"Courtside 1891",country:"AR",category:"sports",website:"https://www.courtside1891.basketball",provider:"FIBA · Courtside 1891",access:"Según competición, territorio y plan",description:"Servicio oficial de FIBA para partidos internacionales de básquet en directo y bajo demanda."}
+ {id:"afa-seleccion",name:"AFA Selección",country:"AR",global:true,category:"sports",website:"https://www.youtube.com/@AFASeleccion",provider:"AFA · canal oficial",access:"Gratis · transmisiones y contenido cuando se publiquen",description:"Canal oficial de las selecciones argentinas. Los directos dependen de los eventos publicados por AFA."},
+ {id:"fiba-youtube",name:"FIBA",country:"AR",global:true,category:"sports",website:"https://www.youtube.com/@FIBA",provider:"FIBA · canal oficial",access:"Gratis · directos seleccionados",description:"Básquet internacional, torneos y eventos oficiales cuando FIBA los emite en abierto."},
+ {id:"fiba-courtside",name:"Courtside 1891",country:"AR",global:true,category:"sports",website:"https://www.courtside1891.basketball",provider:"FIBA · Courtside 1891",access:"Según competición, territorio y plan",description:"Servicio oficial de FIBA para partidos internacionales de básquet en directo y bajo demanda."}
 ];
 
 const MAX_CHANNEL_SOURCES=50;
@@ -206,7 +206,7 @@ if(resource==="discover-all-playlists"&&request.method==="POST"){
  const country=String(body.country||"ALL").trim().toUpperCase();
  if(country!=="ALL"&&!COUNTRIES.includes(country))return json({error:"invalid_country"},400);
  const q=String(body.q||"").trim().toLowerCase().slice(0,80);
- const results=OFFICIAL_SPORTS_SOURCES.filter(item=>(country==="ALL"||item.country===country)&&(!q||[item.name,item.provider,item.description].join(" ").toLowerCase().includes(q)));
+ const results=OFFICIAL_SPORTS_SOURCES.filter(item=>(country==="ALL"||item.country===country||(item.global&&!(item.excludedCountries||[]).includes(country)))&&(!q||[item.name,item.provider,item.description].join(" ").toLowerCase().includes(q))).map(item=>({...item,country:country==="ALL"?item.country:country}));
  return json({ok:true,source:"official-provider-directory",country,results:results.map(item=>({...item,externalOnly:true,authorizationStatus:"approved_for_external_link"})),total:results.length,notice:"Se muestran páginas oficiales externas. Lúmina abre el sitio del titular; no copia ni redistribuye su señal. La disponibilidad, precio y territorio los define cada proveedor."});
 }
 if(resource==="official-sports"&&request.method==="POST"){
@@ -214,7 +214,9 @@ if(resource==="official-sports"&&request.method==="POST"){
  const source=OFFICIAL_SPORTS_SOURCES.find(item=>item.id===sourceId);
  if(!source)return json({error:"unknown_official_source"},404);
  const now=Math.floor(Date.now()/1000);
- const country=source.country,category=source.category,name=source.name;
+ const requestedCountry=String(body.country||source.country).toUpperCase();
+ if(!COUNTRIES.includes(requestedCountry)||(!source.global&&requestedCountry!==source.country)||(source.excludedCountries||[]).includes(requestedCountry))return json({error:"official_source_unavailable_in_country"},400);
+ const country=requestedCountry,category=source.category,name=source.name;
  const website=publicHttpsUrl(source.website);
  if(!website)return json({error:"invalid_official_source"},400);
  const existing=await env.DB.prepare("SELECT id,sources_json,enabled FROM channels WHERE country=? AND name=? COLLATE NOCASE LIMIT 1").bind(country,name).first();
