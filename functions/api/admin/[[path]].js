@@ -13,7 +13,7 @@ function categoryFromGroup(value){const s=String(value||"").toLowerCase();if(/sp
 function parseM3UEntries(text,defaultCountry,feedUrl,evidence){const lines=String(text||"").replace(/^\uFEFF/,"").split(/\r?\n/),entries=[];let meta=null,skipped=0;for(const raw of lines){const line=raw.trim();if(!line)continue;if(line.startsWith("#EXTINF:")){const comma=line.indexOf(","),attrsText=line.slice(8,comma<0?undefined:comma),attrs={};for(const m of attrsText.matchAll(/([\w-]+)=["']([^"']*)["']/g))attrs[m[1].toLowerCase()]=m[2];const name=comma<0?"":line.slice(comma+1).trim();meta={name:name||attrs["tvg-name"]||attrs["tvg-id"]||"",logo:attrs["tvg-logo"]||"",group:attrs["group-title"]||"",country:attrs["tvg-country"]||"",language:attrs["tvg-language"]||""};continue;}if(line.startsWith("#")||!meta)continue;let u;try{u=new URL(line);}catch{skipped++;meta=null;continue;}if(!isVideoSource(u.href)||!publicHttpsUrl(u.href)){skipped++;meta=null;continue;}const country=countryCode(meta.country,defaultCountry);if(!country||!COUNTRIES.includes(country)||!meta.name){skipped++;meta=null;continue;}const logo=publicHttpsUrl(meta.logo);entries.push({name:meta.name.slice(0,100),country,category:categoryFromGroup(meta.group),language:meta.language.slice(0,40),logo:logo?logo.href:"",url:u.href,group:meta.group.slice(0,80),feedUrl:feedUrl||"",evidence});meta=null;if(entries.length>=500)break;}return {entries,skipped};}
 export async function onRequest(context){const {request,env}=context;if(!env.DB)return json({error:"service_unavailable"},503);const actor=await requireAdmin(request,env);if(!actor)return json({error:"forbidden"},403);const url=new URL(request.url),parts=url.pathname.split("/").filter(Boolean),resource=parts[2],id=parts[3];const now=Math.floor(Date.now()/1000);
 if(request.method==="GET"&&resource==="users"){const r=await env.DB.prepare("SELECT id,email,role,status,created_at FROM users ORDER BY created_at DESC LIMIT 500").all();const rows=r.results||[];const permissions=await env.DB.prepare("SELECT user_id,category FROM user_category_permissions").all();const channelPermissions=await env.DB.prepare("SELECT user_id,channel_id FROM user_channel_permissions").all();const channelConfigured=await env.DB.prepare("SELECT user_id FROM user_channel_settings").all();const configured=await env.DB.prepare("SELECT user_id FROM user_category_settings").all();const byUser={};for(const p of permissions.results||[])(byUser[p.user_id]??=[]).push(p.category);const configuredIds=new Set((configured.results||[]).map(x=>x.user_id));const byChannel={};for(const p of channelPermissions.results||[])(byChannel[p.user_id]??=[]).push(p.channel_id);const channelConfiguredIds=new Set((channelConfigured.results||[]).map(x=>x.user_id));return json({users:rows.map(u=>({...u,categories:configuredIds.has(u.id)?(byUser[u.id]||[]):CATEGORIES,channelIds:channelConfiguredIds.has(u.id)?(byChannel[u.id]||[]):null}))});}
-if(request.method==="GET"&&resource==="channels"){const r=await env.DB.prepare("SELECT id,name,country,category,enabled,created_at FROM channels ORDER BY name LIMIT 500").all();return json({channels:r.results||[]});}
+if(request.method==="GET"&&resource==="channels"){const r=await env.DB.prepare("SELECT id,name,country,category,enabled,created_at,sources_json FROM channels ORDER BY name LIMIT 500").all();return json({channels:(r.results||[]).map(row=>{let meta={};try{meta=JSON.parse(row.sources_json||"[]")[0]||{};}catch{}return {id:row.id,name:row.name,country:row.country,category:row.category,enabled:!!row.enabled,created_at:row.created_at,source:typeof meta.url==="string"?meta.url:"",evidence:typeof meta.evidence==="string"?meta.evidence:"",logo:typeof meta.logo==="string"?meta.logo:"",language:typeof meta.language==="string"?meta.language:"",description:typeof meta.description==="string"?meta.description:"",directory:meta.directory||""};})});}
 if(request.method==="GET"&&resource==="discover"){
  const q=(url.searchParams.get("q")||"").trim().slice(0,80);
  if(q.length<2)return json({results:[]});
@@ -78,6 +78,88 @@ if(resource==="discover"&&request.method==="POST"){
  }
  for(let i=0;i<stmts.length;i+=100)await env.DB.batch(stmts.slice(i,i+100));
  return json({ok:true,added,duplicates,invalid});
+}
+if(resource==="discover-playlists"&&request.method==="POST"){
+ const selectedCountry=String(body.country||"ALL").toUpperCase();
+ if(selectedCountry!=="ALL"&&!COUNTRIES.includes(selectedCountry))return json({error:"invalid_country"},400);
+ const directoryUrl="https://raw.githubusercontent.com/teleonline/listas/main/tv.json";
+ const directoryPage="https://github.com/teleonline/listas";
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+ let raw="";
+ try{
+  const response=await fetch(directoryUrl,{method:"GET",redirect:"manual",signal:controller.signal,headers:{"Accept":"application/json","User-Agent":"Lumina-TV/1.0 authorized-source-catalog-discovery"}});
+  if(response.status>=300&&response.status<400)return json({error:"directory_redirect_blocked"},502);
+  if(!response.ok)return json({error:"directory_fetch_failed",status:response.status},502);
+  const length=Number(response.headers.get("content-length")||0);
+  if(length>5242880)return json({error:"directory_too_large"},413);
+  const reader=response.body?.getReader();if(!reader)return json({error:"directory_empty"},502);
+  const decoder=new TextDecoder();let bytes=0;
+  while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;if(bytes>5242880){await reader.cancel();return json({error:"directory_too_large"},413);}raw+=decoder.decode(part.value,{stream:true});}
+  raw+=decoder.decode();
+ }catch{return json({error:"directory_fetch_failed"},502);}finally{clearTimeout(timer);}
+ let directory;
+ try{directory=JSON.parse(raw);}catch{return json({error:"directory_invalid"},502);}
+ const cleanCountry=value=>countryCode(String(value||"").replace(/^[^\p{L}]*/u,"").trim());
+ const records=[],seen=new Set();let skipped=0,withoutStream=0;
+ for(const countryRecord of directory.countries||[]){
+  const country=cleanCountry(countryRecord.name);
+  if(!COUNTRIES.includes(country)||(selectedCountry!=="ALL"&&country!==selectedCountry))continue;
+  for(const ambit of countryRecord.ambits||[]){
+   for(const item of ambit.channels||[]){
+    const name=String(item?.name||"").trim().slice(0,100);
+    if(!name){skipped++;continue;}
+    const options=Array.isArray(item.options)?item.options:[];
+    const stream=options.map(option=>publicHttpsUrl(String(option?.url||""))).find(candidate=>candidate&&isVideoSource(candidate.href));
+    if(!stream){withoutStream++;continue;}
+    const key=country+"|"+normalizeChannelName(name);
+    if(seen.has(key)){skipped++;continue;}
+    seen.add(key);
+    const website=publicHttpsUrl(String(item.web||""));
+    const logoUrl=publicHttpsUrl(String(item.logo||""));
+    records.push({
+     name,country,category:categoryFromGroup(ambit.name||""),
+     url:stream.href,logo:logoUrl?logoUrl.href:"",
+     website:website?website.href:"",
+     evidence:website?website.href:directoryPage
+    });
+    if(records.length>=500)break;
+   }
+   if(records.length>=500)break;
+  }
+  if(records.length>=500)break;
+ }
+ if(!records.length)return json({ok:true,source:"Teleonline",scanned:0,added:0,enriched:0,duplicates:0,skipped,withoutStream,notice:"No se encontraron señales directas HTTPS compatibles para el país seleccionado."});
+ const existingResult=await env.DB.prepare("SELECT id,name,country,sources_json,enabled FROM channels LIMIT 2000").all();
+ const existing=new Map();
+ for(const row of existingResult.results||[]){
+  const key=String(row.country||"")+"|"+normalizeChannelName(row.name);
+  let meta={};try{meta=JSON.parse(row.sources_json||"[]")[0]||{};}catch{}
+  existing.set(key,{...row,meta});
+ }
+ const statements=[];let added=0,enriched=0,duplicates=0;
+ for(const item of records){
+  const key=item.country+"|"+normalizeChannelName(item.name),previous=existing.get(key);
+  const metadata={
+   ...(previous?.meta||{}),
+   url:item.url,logo:item.logo||previous?.meta?.logo||"",
+   description:"Señal encontrada en el directorio Teleonline. Pendiente de revisión manual.",
+   evidence:item.evidence,website:item.website,
+   directory:"teleonline",directoryUrl:directoryPage,directoryCheckedAt:now
+  };
+  if(previous){
+   if(previous.meta?.url){duplicates++;continue;}
+   statements.push(env.DB.prepare("UPDATE channels SET sources_json=?,updated_at=? WHERE id=?").bind(JSON.stringify([metadata]),now,previous.id));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_directory_enriched_pending","channel",previous.id,now));
+   previous.meta=metadata;enriched++;
+  }else{
+   const channelId=crypto.randomUUID();
+   statements.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,item.name,item.country,item.category,JSON.stringify([metadata]),0,now,now));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_directory_discovered_pending","channel",channelId,now));
+   existing.set(key,{id:channelId,name:item.name,country:item.country,meta:metadata,enabled:0});added++;
+  }
+ }
+ for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
+ return json({ok:true,source:"Teleonline",scanned:records.length,added,enriched,duplicates,skipped,withoutStream,directoryUrl});
 }
 if(resource==="import-m3u"&&request.method==="POST"){
  if(body.rightsConfirmed!==true)return json({error:"rights_confirmation_required"},400);
