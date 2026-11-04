@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "minios-tv",
-  "name": "MiniOS TV",
-  "version": "1.0.0",
-  "description": "Centro multimedia adaptable a TV Box con canales autorizados, catálogo público, favoritos e historial.",
+  "id": "lumina-tv",
+  "name": "Lúmina TV",
+  "version": "1.1.0",
+  "description": "Plataforma independiente de televisión en vivo con señales oficiales y autorizadas.",
   "author": "dev0xnc",
   "runtime": "web",
   "entry": "index.html",
