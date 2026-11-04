@@ -6,6 +6,15 @@ En Administración, **Buscar emisoras en fuentes públicas (Latinoamérica)** co
 
 Una ficha pendiente no se expone en el catálogo de usuarios hasta que el administrador le asigne una fuente válida y la active.
 
+## Buscar listas automáticamente
+
+En Administración, el botón **Buscar listas y agregar canales pendientes** consulta el catálogo estructurado de Teleonline (`https://teleonline.github.io/listas/tv.json`), declarado por su mantenedor como una recopilación de emisiones oficiales y autorizadas. Lúmina filtra los 20 países latinoamericanos configurados y toma únicamente enlaces HTTPS directos con extensiones de vídeo admitidas.
+
+La búsqueda omite señales servidas mediante reproductores incrustados, plataformas o formatos que el reproductor no admite directamente. Los canales nuevos se crean deshabilitados; si ya existe una ficha sin señal, se completa con la URL encontrada, pero se conserva su estado actual. Los duplicados que ya tienen una fuente no se sobrescriben.
+
+El directorio es una fuente comunitaria y sus declaraciones no sustituyen una comprobación independiente de los derechos, restricciones regionales, términos de la emisora y disponibilidad real. Antes de activar una señal, revisar la web oficial registrada, confirmar que su retransmisión está autorizada y probarla en el dispositivo. La búsqueda nunca activa canales automáticamente.
+
+Fuente de datos: [Teleonline, catálogo público y su apartado de cumplimiento legal](https://github.com/teleonline/listas).
 ## Importar una lista M3U autorizada
 
 En Administración, usar el panel **Importar / actualizar catálogo M3U**:
