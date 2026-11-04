@@ -6,7 +6,7 @@
 </head><body><main>
 <div class="top"><div><h1>Lúmina TV · Administración</h1><p class="muted">Gestioná usuarios y señales autorizadas.</p></div><div><a href="./index.html">Volver a TV</a> <button id="logout">Cerrar sesión</button></div></div>
 <section class="panel"><h2>Usuarios</h2><p class="muted">Suspender una cuenta revoca automáticamente todas sus sesiones.</p><input id="userSearch" placeholder="Buscar por correo"><div id="users">Cargando…</div></section>
-<section class="panel"><h2>Permisos individuales y cuentas</h2><p class="muted">Elegí qué señales puede ver cada cuenta. “Todos los canales” también habilita automáticamente los canales nuevos que se incorporen en el futuro. La cuenta verá un canal solo cuando esté activo y su categoría también esté permitida.</p><select id="manageUser"></select><div id="channelPermissions"></div><div class="row"><button type="button" id="selectCurrentChannels">Seleccionar todos los actuales</button><button type="button" id="clearChannelSelection">Quitar todos</button></div><button type="button" id="saveChannelPermissions">Guardar canales permitidos</button><div class="row"><input id="temporaryPassword" type="password" minlength="12" placeholder="Nueva contraseña temporal (12+ caracteres)"><button type="button" id="resetUserPassword">Restablecer contraseña</button></div><p class="muted">Al cambiar una contraseña se revocan las sesiones de esa cuenta.</p></section><section class="panel"><h2>Descubrimiento de canales</h2><p class="muted">Busca candidatos de TV de los países de Latinoamérica usando metadatos públicos. Se descartan resultados sin país latinoamericano identificado. Añadir un candidato crea una ficha pendiente: su referencia de Wikidata o su sitio web no demuestra autorización ni habilita una transmisión.</p><button type="button" id="autoDiscover">Buscar emisoras en fuentes públicas (Latinoamérica)</button><form id="discover" class="row"><input id="query" placeholder="Ej.: TV Pública, Telefe, Canal 13…" minlength="2" required><button>Buscar canales</button></form><div id="results"></div></section>
+<section class="panel"><h2>Permisos individuales y cuentas</h2><p class="muted">Elegí qué señales puede ver cada cuenta. “Todos los canales” también habilita automáticamente los canales nuevos que se incorporen en el futuro. La cuenta verá un canal solo cuando esté activo y su categoría también esté permitida.</p><select id="manageUser"></select><div id="channelPermissions"></div><div class="row"><button type="button" id="selectCurrentChannels">Seleccionar todos los actuales</button><button type="button" id="clearChannelSelection">Quitar todos</button></div><button type="button" id="saveChannelPermissions">Guardar canales permitidos</button><div class="row"><input id="temporaryPassword" type="password" minlength="12" placeholder="Nueva contraseña temporal (12+ caracteres)"><button type="button" id="resetUserPassword">Restablecer contraseña</button></div><p class="muted">Al cambiar una contraseña se revocan las sesiones de esa cuenta.</p></section><section class="panel"><h2>Descubrimiento de canales</h2><p class="muted">Alterna entre tres fuentes públicas en cada intento: iptv-org (catálogo de canales y categorías), Wikidata (metadatos) y Teleonline (señales de su directorio curado). No rastrea literalmente toda Internet ni garantiza resultados. Los candidatos de metadatos se guardan como fichas pendientes, sin transmisión; una web oficial tampoco demuestra por sí sola autorización para retransmitir.</p><button type="button" id="autoDiscover">Buscar emisoras en fuentes públicas (Latinoamérica)</button><form id="discover" class="row"><input id="query" placeholder="Ej.: TV Pública, Telefe, Canal 13…" minlength="2" required><button>Buscar canales</button></form><div id="results"></div></section>
 <section class="panel" id="m3uFeedPanel"><h2>Importar / actualizar catálogo M3U</h2>
 <p class="muted">Importá una lista M3U autorizada desde un archivo o una URL HTTPS pública. Los canales con país y enlaces de vídeo compatibles se incorporan al catálogo; una URL remota puede actualizar los canales de esa misma lista sin duplicarlos.</p>
 <div class="row"><input id="m3uAdminFile" type="file" accept=".m3u,.m3u8,text/plain"><input id="m3uAdminUrl" type="url" placeholder="https://servidor-oficial/lista.m3u"></div>
@@ -29,7 +29,7 @@
 <input id="source" type="url" placeholder="URL HTTPS directa (HLS .m3u8, DASH .mpd, MP4, WebM u Ogg)" required style="width:100%"><input id="evidence" type="url" placeholder="URL oficial que acredita la fuente/autorización" required style="width:100%"><button class="primary">Publicar canal</button></form><p class="muted">Solo publicá señales oficiales, de dominio público o con permiso de distribución. El descubridor no confirma derechos automáticamente.</p><div class="channel-bulk"><label><input type="checkbox" id="selectAllChannels"> Seleccionar todos</label><span id="selectedChannelCount" class="muted">0 seleccionados</span><button type="button" id="deleteSelectedChannels" disabled>Eliminar seleccionados</button><button type="button" id="deleteAllChannels" class="danger">Eliminar todos los canales…</button></div><div id="channels">Cargando…</div></section>
 <dialog id="channelPreviewDialog" class="channel-preview"><div class="channel-preview-head"><h2 id="channelPreviewTitle">Probar canal</h2><button type="button" id="closeChannelPreview">Cerrar</button></div><video id="channelPreviewVideo" controls playsinline preload="none"></video><p id="channelPreviewStatus" class="status" role="status">Preparando reproducción…</p><a id="channelPreviewSource" target="_blank" rel="noopener noreferrer">Abrir fuente en otra pestaña</a></dialog><p id="status" class="status" role="status"></p></main>
 <script>
-(()=>{const $=id=>document.getElementById(id),esc=x=>String(x||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));async function api(path,opt={}){const r=await fetch("/api/admin/"+path,{credentials:"same-origin",...opt,headers:{"Content-Type":"application/json",...(opt.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok){const messages={channel_exists:"Ya existe un canal con ese nombre y país.",invalid_channel:"Los datos del canal no son válidos. Revisá nombre, país, categoría y referencia HTTPS.",invalid_source:"La fuente debe ser HTTPS y terminar en un formato de vídeo reconocido.",invalid_origin:"La solicitud no proviene de esta aplicación.",payload_too_large:"La solicitud supera el tamaño permitido.",rights_confirmation_required:"Confirmá que tenés autorización para distribuir las señales.",invalid_evidence:"La referencia de autorización debe ser una URL HTTPS pública.",source_not_verified:"La transmisión no superó la comprobación técnica: ",confirmation_required:"La eliminación total requiere una confirmación adicional.",invalid_channel_ids:"La selección de canales no es válida.",invalid_feed_url:"La lista debe estar en una URL HTTPS pública.",feed_redirect_blocked:"La URL redirige a otra dirección. Pegá la URL final de la lista.",feed_fetch_failed:"No se pudo descargar la lista. Revisá la URL, el acceso y que el servidor responda.",feed_too_large:"La lista supera el límite de 1 MB.",feed_empty:"La lista está vacía.",no_supported_entries:"No se encontraron enlaces HTTPS de vídeo compatibles con país y nombre.",directory_redirect_blocked:"El directorio redirigió la solicitud y no se pudo consultar.",directory_fetch_failed:"No se pudo consultar el directorio. Intentá de nuevo más tarde.",directory_too_large:"El catálogo externo supera el límite de tamaño.",directory_empty:"El directorio no devolvió datos.",directory_invalid:"El directorio devolvió un formato inesperado."};throw Error((messages[d.error]||d.error||"Operación rechazada")+(d.error==="source_not_verified"&&d.probe?.message?d.probe.message:""));}return d;}
+(()=>{const $=id=>document.getElementById(id),esc=x=>String(x||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));async function api(path,opt={}){const r=await fetch("/api/admin/"+path,{credentials:"same-origin",...opt,headers:{"Content-Type":"application/json",...(opt.headers||{})}});const d=await r.json().catch(()=>({error:"invalid_server_response"}));if(!r.ok){const messages={channel_exists:"Ya existe un canal con ese nombre y país.",invalid_channel:"Los datos del canal no son válidos. Revisá nombre, país, categoría y referencia HTTPS.",invalid_source:"La fuente debe ser HTTPS y terminar en un formato de vídeo reconocido.",invalid_origin:"La solicitud no proviene de esta aplicación.",payload_too_large:"La solicitud supera el tamaño permitido.",rights_confirmation_required:"Confirmá que tenés autorización para distribuir las señales.",invalid_evidence:"La referencia de autorización debe ser una URL HTTPS pública.",source_not_verified:"La transmisión no superó la comprobación técnica: ",confirmation_required:"La eliminación total requiere una confirmación adicional.",invalid_channel_ids:"La selección de canales no es válida.",invalid_feed_url:"La lista debe estar en una URL HTTPS pública.",feed_redirect_blocked:"La URL redirige a otra dirección. Pegá la URL final de la lista.",feed_fetch_failed:"No se pudo descargar la lista. Revisá la URL, el acceso y que el servidor responda.",feed_too_large:"La lista supera el límite de 1 MB.",feed_empty:"La lista está vacía.",no_supported_entries:"No se encontraron enlaces HTTPS de vídeo compatibles con país y nombre.",directory_redirect_blocked:"El directorio redirigió la solicitud y no se pudo consultar.",directory_fetch_failed:"No se pudo consultar el directorio. Intentá de nuevo más tarde.",directory_too_large:"El catálogo externo supera el límite de tamaño.",directory_empty:"El directorio no devolvió datos.",directory_invalid:"El directorio devolvió un formato inesperado."};throw Error((messages[d.error]||d.error||"Operación rechazada")+" (HTTP "+r.status+")"+(d.error==="source_not_verified"&&d.probe?.message?": "+d.probe.message:""));}return d;}
 const CATEGORIES=["general","sports","news","music","kids","movies","series","documentary","entertainment","education","culture","lifestyle","religion"];const CATEGORY_LABELS={general:"General",sports:"Deportes",news:"Noticias",music:"Música",kids:"Infantiles",movies:"Películas",series:"Series",documentary:"Documentales",entertainment:"Entretenimiento",education:"Educación",culture:"Cultura",lifestyle:"Estilo de vida",religion:"Religión"};let users=[],channels=[];async function load(){const [u,c]=await Promise.all([api("users"),api("channels")]);users=u.users||[];channels=c.channels||[];renderUsers();renderChannels();if(typeof window.refreshPermissionPanel==="function")await window.refreshPermissionPanel();}
 function renderUsers(){const q=$("userSearch").value.toLowerCase(),list=users.filter(x=>x.email.toLowerCase().includes(q));$("users").innerHTML="<table><tr><th>Correo</th><th>Rol</th><th>Estado</th><th>Alta</th><th>Acción</th><th>Categorías permitidas</th></tr>"+list.map(x=>"<tr><td>"+esc(x.email)+"</td><td>"+esc(x.role)+"</td><td>"+esc(x.status)+"</td><td>"+new Date(x.created_at*1000).toLocaleDateString("es-AR")+"</td><td>"+(x.role==="admin"?"Administrador protegido":'<button data-user="'+esc(x.id)+'" data-status="'+(x.status==="active"?"suspended":"active")+'">'+(x.status==="active"?"Suspender":"Reactivar")+"</button>")+"</td><td>"+(x.role==="admin"?"Todas":'<details><summary>Configurar</summary><div>'+CATEGORIES.map(c=>'<label style="display:block"><input type="checkbox" data-permission="' + c + '" data-user-permissions="' + esc(x.id) + '" '+((x.categories||CATEGORIES).includes(c)?"checked":"")+' > '+CATEGORY_LABELS[c]+'</label>').join("")+'<button type="button" data-save-permissions="' + esc(x.id) + '">Guardar categorías</button></div></details>')+"</td></tr>").join("")+"</table>"}
 function updateChannelSelection(){
@@ -45,7 +45,7 @@ function renderChannels(){
   const state=x.enabled?"Activo":verified?"Compatible verificada · pendiente de revisión":"Pendiente de señal";
   const origin=x.directory==="teleonline"?(x.website?'<a target="_blank" rel="noopener noreferrer" href="'+esc(x.website)+'">Web de la emisora</a>':"Directorio externo · revisar"):(x.source?"Fuente cargada":"Sin fuente");
   const preview=x.source?'<button type="button" data-preview-channel="'+esc(x.id)+'">▶ Probar</button>':'<button type="button" disabled>Sin señal</button>';
-  return "<tr><td><input type='checkbox' data-select-channel='"+esc(x.id)+"' aria-label='Seleccionar "+esc(x.name)+"'></td><td>"+esc(x.name)+"</td><td>"+esc(x.country)+"</td><td>"+esc(x.category)+"</td><td>"+origin+"</td><td>"+state+(verified?"<br><small>"+esc(x.verification.kind||"Vídeo")+" · HTTP "+esc(x.verification.httpStatus||"")+"</small>":"")+"</td><td>"+preview+" <button data-edit-channel='"+esc(x.id)+"'>Editar</button> <button data-activate-channel='"+esc(x.id)+"'>Activar / desactivar</button> <button data-channel='"+esc(x.id)+"'>Eliminar</button></td></tr>";
+  return "<tr><td><input type='checkbox' data-select-channel='"+esc(x.id)+"' aria-label='Seleccionar "+esc(x.name)+"'></td><td>"+esc(x.name)+"</td><td>"+esc(x.country)+"</td><td>"+esc(x.category)+"</td><td>"+origin+"</td><td>"+state+(verified?"<br><small>"+esc(x.verification.kind||"Vídeo")+" · HTTP "+esc(x.verification.httpStatus||"")+"</small>":"")+"</td><td>"+preview+" <button type="button" data-edit-channel='"+esc(x.id)+"'>Editar</button> <button type="button" data-activate-channel='"+esc(x.id)+"'>Activar / desactivar</button> <button type="button" data-channel='"+esc(x.id)+"'>Eliminar</button></td></tr>";
  }).join("")+"</tbody></table>";
  updateChannelSelection();
 }
@@ -80,12 +80,65 @@ async function previewChannel(id){
  video.addEventListener("error",()=>{$("channelPreviewStatus").textContent="Falló la reproducción en este navegador. Puede ser CORS, códec, región o disponibilidad."},{once:true});
 }
 $("closeChannelPreview").onclick=stopChannelPreview;
-$("channels").onclick=async e=>{
- const preview=e.target.closest("[data-preview-channel]");if(preview){previewChannel(preview.dataset.previewChannel);return;}
- const edit=e.target.closest("[data-edit-channel]");if(edit){const ch=channels.find(x=>x.id===edit.dataset.editChannel);if(!ch)return;const name=prompt("Nombre del canal",ch.name);if(name===null)return;const country=prompt("País ISO (AR, BR, CL...)",ch.country);if(country===null)return;const category=prompt("Categoría: general, sports, news, music, kids, movies, series, documentary, entertainment, education, culture, lifestyle, religion",ch.category);if(category===null)return;const evidence=prompt("Página HTTPS oficial o referencia de autorización",ch.evidence||"https://");if(evidence===null)return;try{await api("channels/"+encodeURIComponent(ch.id),{method:"PATCH",body:JSON.stringify({name,country,category,source:ch.source||"",evidence,enabled:!!ch.enabled,sources:ch.sources||[ch.source].filter(Boolean)})});$("status").textContent="Datos actualizados. El estado de activación no cambió.";await load();}catch(x){$("status").textContent=x.message;}return;}
- const activate=e.target.closest("[data-activate-channel]");if(activate){const ch=channels.find(x=>x.id===activate.dataset.activateChannel);if(!ch)return;if(ch.enabled){if(!confirm("¿Desactivar "+ch.name+"?"))return;try{await api("channels/"+encodeURIComponent(ch.id),{method:"PATCH",body:JSON.stringify({name:ch.name,country:ch.country,category:ch.category,source:ch.source||"",evidence:ch.evidence,enabled:false})});$("status").textContent="Canal desactivado.";await load();}catch(x){$("status").textContent=x.message;}return;}const sourceText=prompt("Fuentes HTTPS autorizadas: una URL por línea (máximo 5). Se mostrarán como OP 1, OP 2…",(ch.sources||[]).join("\n")||ch.source||"");if(sourceText===null||!sourceText.trim())return;const sources=sourceText.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).slice(0,5);const source=sources[0];const evidence=prompt("Página oficial o referencia que acredita autorización",ch.evidence||"https://");if(evidence===null)return;if(!confirm("Confirmá que tenés autorización para distribuir esta señal. La comprobación técnica no acredita derechos."))return;try{await api("channels/"+encodeURIComponent(ch.id),{method:"PATCH",body:JSON.stringify({name:ch.name,country:ch.country,category:ch.category,source,sources,evidence,enabled:true})});$("status").textContent="Canal activado tras la comprobación técnica.";await load();}catch(x){$("status").textContent=x.message;}return;}
- const b=e.target.closest("[data-channel]");if(!b||!confirm("¿Eliminar este canal?"))return;try{await api("channels/"+encodeURIComponent(b.dataset.channel),{method:"DELETE"});await load();}catch(x){$("status").textContent=x.message;}
-};
+
+async function handleChannelAction(event){
+ const target=event.target instanceof Element?event.target:event.target?.parentElement;
+ const button=target?.closest("#channels button[data-preview-channel],#channels button[data-edit-channel],#channels button[data-activate-channel],#channels button[data-channel]");
+ if(!button||button.disabled)return;
+ event.preventDefault();event.stopPropagation();
+ if(button.hasAttribute("data-preview-channel")){previewChannel(button.dataset.previewChannel);return;}
+ button.disabled=true;
+ try{
+  if(button.hasAttribute("data-edit-channel")){
+   const ch=channels.find(x=>x.id===button.dataset.editChannel);
+   if(!ch)throw Error("No se encontró el canal. Actualizá la tabla e intentá de nuevo.");
+   const name=prompt("Nombre del canal",ch.name);if(name===null)return;
+   const country=prompt("País ISO (AR, BR, CL...)",ch.country);if(country===null)return;
+   const category=prompt("Categoría: general, sports, news, music, kids, movies, series, documentary, entertainment, education, culture, lifestyle, religion",ch.category);if(category===null)return;
+   const evidence=prompt("Página HTTPS oficial o referencia de autorización",ch.evidence||"https://");if(evidence===null)return;
+   $("status").textContent="Guardando cambios de "+ch.name+"…";
+   await api("channels/"+encodeURIComponent(ch.id),{method:"PATCH",body:JSON.stringify({name,country,category:String(category).trim().toLowerCase(),source:ch.source||"",evidence,enabled:!!ch.enabled,sources:ch.sources||[ch.source].filter(Boolean)})});
+   $("status").textContent="Datos actualizados. El estado de activación no cambió.";
+   await load();return;
+  }
+  if(button.hasAttribute("data-activate-channel")){
+   const ch=channels.find(x=>x.id===button.dataset.activateChannel);
+   if(!ch)throw Error("No se encontró el canal. Actualizá la tabla e intentá de nuevo.");
+   if(ch.enabled){
+    if(!confirm("¿Desactivar "+ch.name+"?"))return;
+    const evidence=ch.evidence||prompt("Referencia HTTPS del canal", "https://");
+    if(!evidence)return;
+    $("status").textContent="Desactivando "+ch.name+"…";
+    await api("channels/"+encodeURIComponent(ch.id),{method:"PATCH",body:JSON.stringify({name:ch.name,country:ch.country,category:ch.category,source:ch.source||"",evidence,enabled:false})});
+    $("status").textContent="Canal desactivado correctamente.";
+    await load();return;
+   }
+   const sourceText=prompt("Fuentes HTTPS autorizadas: una URL por línea (máximo 5). Se mostrarán como OP 1, OP 2…",(ch.sources||[]).join("\n")||ch.source||"");
+   if(sourceText===null||!sourceText.trim())return;
+   const sources=sourceText.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).slice(0,5);
+   const evidence=prompt("Página oficial o referencia que acredita autorización",ch.evidence||"https://");
+   if(evidence===null)return;
+   if(!confirm("Confirmá que tenés autorización para distribuir esta señal. La comprobación técnica no acredita derechos."))return;
+   $("status").textContent="Comprobando las fuentes de "+ch.name+"…";
+   const result=await api("channels/"+encodeURIComponent(ch.id),{method:"PATCH",body:JSON.stringify({name:ch.name,country:ch.country,category:ch.category,source:sources[0],sources,evidence,enabled:true})});
+   $("status").textContent="Canal activado. Fuentes guardadas: "+(result.sourceCount||0)+(result.failedSources?" · Fuentes rechazadas: "+result.failedSources:"")+".";
+   await load();return;
+  }
+  const id=button.dataset.channel;
+  const ch=channels.find(x=>x.id===id);
+  if(!ch)throw Error("No se encontró el canal. Actualizá la tabla e intentá de nuevo.");
+  if(!confirm("¿Eliminar definitivamente el canal "+ch.name+"?"))return;
+  $("status").textContent="Eliminando "+ch.name+"…";
+  await api("channels/"+encodeURIComponent(id),{method:"DELETE"});
+  $("status").textContent="Canal eliminado correctamente.";
+  await load();
+ }catch(error){
+  $("status").textContent="No se pudo completar la acción: "+(error?.message||"Error desconocido");
+ }finally{
+  if(button.isConnected)button.disabled=false;
+ }
+}
+document.addEventListener("click",handleChannelAction,true);
 $("channels").addEventListener("change",e=>{if(e.target.matches("[data-select-channel]"))updateChannelSelection();});
 $("selectAllChannels").addEventListener("change",e=>{document.querySelectorAll("[data-select-channel]").forEach(box=>box.checked=e.target.checked);updateChannelSelection();});
 $("deleteSelectedChannels").addEventListener("click",async()=>{
@@ -133,8 +186,8 @@ $("results").onclick=async e=>{
  try{
   const x=window.discoveryResults?.[b.dataset.add];
   if(!x||!x.country)throw Error("El candidato no tiene un país latinoamericano identificado.");
-  const reference=x.website&&/^https:\/\//i.test(x.website)?x.website:"https://www.wikidata.org/wiki/"+encodeURIComponent(x.id);
-  await api("channels",{method:"POST",body:JSON.stringify({pending:true,name:x.label,country:x.country,category:"general",language:x.language,logo:x.logo,description:x.description,evidence:reference,source:""})});
+  const reference=x.website&&/^https:\/\//i.test(x.website)?x.website:(String(x.id).startsWith("IPTV:")?"https://github.com/iptv-org/database":"https://www.wikidata.org/wiki/"+encodeURIComponent(x.id));
+  await api("channels",{method:"POST",body:JSON.stringify({pending:true,name:x.label,country:x.country,category:CATEGORIES.includes(x.category)?x.category:"general",language:x.language,logo:x.logo,description:x.description,evidence:reference,source:""})});
   b.textContent="✓ Añadido · pendiente";
   $("status").textContent=x.label+" se agregó como ficha pendiente. La referencia solo identifica el canal; todavía falta verificar una transmisión autorizada.";
   await load();
@@ -166,33 +219,62 @@ const LATAM_DISCOVERY_COUNTRIES=[
  {code:"DO",name:"República Dominicana",query:"canal de televisión"},
  {code:"PR",name:"Puerto Rico",query:"television channel"}
 ];
+
+const DISCOVERY_ROTATION_KEY="lumina_tv_discovery_rotation_v2";
 $("autoDiscover").onclick=async()=>{
- const button=$("autoDiscover");button.disabled=true;const results=new Map();let failures=0,created=0,duplicates=0;
+ const button=$("autoDiscover");button.disabled=true;
+ let turn=0;
+ try{turn=Math.max(0,Number(localStorage.getItem(DISCOVERY_ROTATION_KEY)||"0")||0);localStorage.setItem(DISCOVERY_ROTATION_KEY,String(turn+1));}catch{}
+ const providers=["iptv-org","wikidata","teleonline"];
+ const provider=providers[turn%providers.length];
+ const showSource=name=>{$("results").textContent="Fuente consultada: "+name+". "+$("results").textContent;};
  try{
-  for(let i=0;i<LATAM_DISCOVERY_COUNTRIES.length;i+=2){
-   const group=LATAM_DISCOVERY_COUNTRIES.slice(i,i+2);
-   $("results").textContent="Buscando metadatos: "+Math.min(i+2,LATAM_DISCOVERY_COUNTRIES.length)+" de "+LATAM_DISCOVERY_COUNTRIES.length+" países…";
-   const responses=await Promise.all(group.map(async country=>{
-    try{return {country,data:await api("discover?q="+encodeURIComponent(country.query+" "+country.name))};}
-    catch{return {country,data:{results:[]},failed:true};}
-   }));
-   for(const response of responses){
-    if(response.failed)failures++;
-    const valid=(response.data.results||[]).filter(x=>x.country===response.country.code&&x.id&&x.label).slice(0,6);
-    for(const item of valid)if(!results.has(item.id))results.set(item.id,item);
+  if(provider==="iptv-org"){
+   const offset=Math.floor(turn/providers.length)*120;
+   $("results").textContent="Consultando el catálogo público de canales de iptv-org y filtrando Latinoamérica…";
+   const data=await api("discover-catalog?country=ALL&category=ALL&limit=120&offset="+offset);
+   const items=(data.results||[]).filter(x=>x.id&&x.country&&x.label);
+   if(!items.length)throw Error("Esta página del catálogo no devolvió candidatos. En el siguiente intento se consultará otra fuente.");
+   for(let i=0;i<items.length;i+=35){
+    await api("discover",{method:"POST",body:JSON.stringify({items:items.slice(i,i+35)})});
    }
+   await load();renderDiscoveryResults(items);
+   showSource("iptv-org · metadatos");
+   $("status").textContent="Se revisaron "+data.total+" fichas latinoamericanas posibles. Se incorporaron "+items.length+" candidatos como pendientes; las categorías provienen del catálogo. No se importaron transmisiones.";
+   return;
   }
-  const items=[...results.values()].slice(0,120);
-  if(!items.length)throw Error("No se encontraron fichas con país identificado. Probá la búsqueda manual.");
-  for(let i=0;i<items.length;i+=35){
-   const batch=items.slice(i,i+35);
-   const response=await api("discover",{method:"POST",body:JSON.stringify({items:batch})});
-   created+=response.added||0;duplicates+=response.duplicates||0;
+  if(provider==="wikidata"){
+   const results=new Map();let failures=0;
+   for(let i=0;i<LATAM_DISCOVERY_COUNTRIES.length;i+=2){
+    const group=LATAM_DISCOVERY_COUNTRIES.slice(i,i+2);
+    $("results").textContent="Consultando Wikidata: "+Math.min(i+2,LATAM_DISCOVERY_COUNTRIES.length)+" de "+LATAM_DISCOVERY_COUNTRIES.length+" países…";
+    const responses=await Promise.all(group.map(async country=>{
+     try{return {country,data:await api("discover?q="+encodeURIComponent(country.query+" "+country.name))};}
+     catch{return {country,data:{results:[]},failed:true};}
+    }));
+    for(const response of responses){
+     if(response.failed)failures++;
+     const valid=(response.data.results||[]).filter(x=>x.country===response.country.code&&x.id&&x.label).slice(0,8);
+     for(const item of valid)if(!results.has(item.id))results.set(item.id,{...item,category:"general"});
+    }
+   }
+   const items=[...results.values()].slice(0,120);
+   if(!items.length)throw Error("Wikidata no devolvió fichas con país latinoamericano identificado.");
+   for(let i=0;i<items.length;i+=35)await api("discover",{method:"POST",body:JSON.stringify({items:items.slice(i,i+35)})});
+   await load();renderDiscoveryResults(items);
+   showSource("Wikidata · metadatos");
+   $("status").textContent="Wikidata devolvió "+items.length+" candidatos; se agregaron como pendientes, con "+failures+" consultas fallidas. No se importaron transmisiones.";
+   return;
   }
-  await load();renderDiscoveryResults(items);
-  $("status").textContent="Exploración terminada: "+created+" fichas nuevas guardadas como pendientes, "+duplicates+" ya existentes"+(failures?" y "+failures+" búsquedas fallidas":"")+". Para reproducirlas todavía hay que incorporar una transmisión autorizada.";
- }catch(error){$("status").textContent="No se pudo completar el descubrimiento: "+error.message;}
- finally{button.disabled=false;}
+  $("results").textContent="Consultando el directorio curado Teleonline y comprobando señales compatibles…";
+  const result=await api("discover-playlists",{method:"POST",body:JSON.stringify({country:"ALL",category:"ALL",limit:25,timeBudgetSeconds:20})});
+  await load();
+  showSource("Teleonline · catálogo de transmisiones");
+  $("status").textContent="Teleonline: "+result.candidatesFound+" candidatos, "+result.checked+" comprobados, "+result.verified+" compatibles, "+result.added+" canales nuevos pendientes y "+result.failed+" rechazados. La comprobación no reemplaza la revisión de autorización.";
+  $("results").textContent="Teleonline consultado. Se revisaron "+result.checked+" candidatos de "+result.candidatesFound+". Los compatibles quedaron pendientes de autorización y activación.";
+ }catch(error){
+  $("status").textContent="No se pudo completar el descubrimiento ("+provider+"): "+(error?.message||"Error desconocido");
+ }finally{button.disabled=false;}
 };
 $("autoPlaylistSearch").onclick=async()=>{
  const button=$("autoPlaylistSearch"),status=$("autoPlaylistStatus"),country=$("autoListCountry").value;
