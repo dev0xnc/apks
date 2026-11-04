@@ -154,7 +154,7 @@ if(resource==="discover-playlists"&&request.method==="POST"){
     if(!name){skipped++;continue;}
     const options=Array.isArray(item.options)?item.options:[];
     const priority={m3u8:0,mpd:1,mp4:2,m4v:3,webm:4,ogv:5,ogg:6};
-    const streams=[...new Set(options.map(option=>publicHttpsUrl(String(option?.url||""))).filter(candidate=>candidate&&DIRECT_VIDEO_EXTENSIONS.includes(directVideoExtension(candidate))).map(candidate=>candidate.href))].sort((a,b)=>priority[directVideoExtension(new URL(a))]-priority[directVideoExtension(new URL(b))]).slice(0,2);
+    const streams=[...new Set(options.map(option=>publicHttpsUrl(String(option?.url||""))).filter(candidate=>candidate&&DIRECT_VIDEO_EXTENSIONS.includes(directVideoExtension(candidate))).map(candidate=>candidate.href))].sort((a,b)=>priority[directVideoExtension(new URL(a))]-priority[directVideoExtension(new URL(b))]).slice(0,5);
     if(!streams.length){withoutStream++;continue;}
     const key=country+"|"+normalizeChannelName(name);
     if(seen.has(key)){skipped++;continue;}
@@ -176,7 +176,7 @@ if(resource==="discover-playlists"&&request.method==="POST"){
    if(remaining<700)return {...item,url:item.urls[0],probe:{ok:false,code:"time_budget",message:"Se alcanzó el tiempo máximo de esta búsqueda."}};
    const probes=await Promise.all(item.urls.map(url=>probeVideoSource(url,Math.min(2600,remaining))));
    const successful=probes.findIndex(probe=>probe.ok),chosen=successful>=0?successful:0;
-   return {...item,url:item.urls[chosen],probe:probes[chosen],alternativesChecked:probes.length};
+   return {...item,url:item.urls[chosen],probe:probes[chosen],verifiedSources:item.urls.map((url,index)=>({url,probe:probes[index]})).filter(x=>x.probe.ok),alternativesChecked:probes.length};
   }));
   checked.push(...results);cursor+=batch.length;
  }
