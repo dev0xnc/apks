@@ -45,7 +45,7 @@ function renderChannels(){
   const state=x.enabled?"Activo":verified?"Compatible verificada · pendiente de revisión":"Pendiente de señal";
   const origin=x.directory==="teleonline"?(x.website?'<a target="_blank" rel="noopener noreferrer" href="'+esc(x.website)+'">Web de la emisora</a>':"Directorio externo · revisar"):(x.source?"Fuente cargada":"Sin fuente");
   const preview=x.source?'<button type="button" data-preview-channel="'+esc(x.id)+'">▶ Probar</button>':'<button type="button" disabled>Sin señal</button>';
-  return "<tr><td><input type='checkbox' data-select-channel='"+esc(x.id)+"' aria-label='Seleccionar "+esc(x.name)+"'></td><td>"+esc(x.name)+"</td><td>"+esc(x.country)+"</td><td>"+esc(x.category)+"</td><td>"+origin+"</td><td>"+state+(verified?"<br><small>"+esc(x.verification.kind||"Vídeo")+" · HTTP "+esc(x.verification.httpStatus||"")+"</small>":"")+"</td><td>"+preview+" <button data-edit-channel='"+esc(x.id)+"'>Editar / activar</button> <button data-channel='"+esc(x.id)+"'>Eliminar</button></td></tr>";
+  return "<tr><td><input type='checkbox' data-select-channel='"+esc(x.id)+"' aria-label='Seleccionar "+esc(x.name)+"'></td><td>"+esc(x.name)+"</td><td>"+esc(x.country)+"</td><td>"+esc(x.category)+"</td><td>"+origin+"</td><td>"+state+(verified?"<br><small>"+esc(x.verification.kind||"Vídeo")+" · HTTP "+esc(x.verification.httpStatus||"")+"</small>":"")+"</td><td>"+preview+" <button data-edit-channel='"+esc(x.id)+"'>Editar</button> <button data-activate-channel=''+esc(x.id)+'>Activar / desactivar</button> <button data-channel='"+esc(x.id)+"'>Eliminar</button></td></tr>";
  }).join("")+"</tbody></table>";
  updateChannelSelection();
 }
