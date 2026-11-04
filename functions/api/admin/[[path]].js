@@ -112,7 +112,7 @@ if(resource==="discover"&&request.method==="POST"){
   const evidence="https://www.wikidata.org/wiki/"+id;
   const metadata={url:"",language:String(item.language||"").slice(0,40),logo,description:String(item.description||"").slice(0,500),evidence,discoveryId:id};
   const channelId=crypto.randomUUID();
-  stmts.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,"general",JSON.stringify(mergedSources.length?mergedSources:[metadata]),0,now,now));
+  stmts.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,"general",JSON.stringify([metadata]),0,now,now));
   stmts.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_discovered_pending","channel",channelId,now));
   existing.add(key);added++;
  }
@@ -121,7 +121,8 @@ if(resource==="discover"&&request.method==="POST"){
 }
 if(resource==="discover-playlists"&&request.method==="POST"){
  const selectedCountry=String(body.country||"ALL").toUpperCase();
- const selectedCategory=String(body.category||"ALL").toLowerCase();
+ const rawCategory=String(body.category||"ALL").trim();
+ const selectedCategory=rawCategory.toUpperCase()==="ALL"?"ALL":rawCategory.toLowerCase();
  if(selectedCountry!=="ALL"&&!COUNTRIES.includes(selectedCountry))return json({error:"invalid_country"},400);
  if(selectedCategory!=="ALL"&&!CATEGORIES.includes(selectedCategory))return json({error:"invalid_category"},400);
  const requestedLimit=Number(body.limit??20);
