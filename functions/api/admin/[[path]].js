@@ -68,6 +68,15 @@ function categoryFromCatalog(values){
  return "general";
 }
 function parseM3UEntries(text,defaultCountry,feedUrl,evidence){const lines=String(text||"").replace(/^\uFEFF/,"").split(/\r?\n/),entries=[];let meta=null,skipped=0;for(const raw of lines){const line=raw.trim();if(!line)continue;if(line.startsWith("#EXTINF:")){const comma=line.indexOf(","),attrsText=line.slice(8,comma<0?undefined:comma),attrs={};for(const m of attrsText.matchAll(/([\w-]+)=["']([^"']*)["']/g))attrs[m[1].toLowerCase()]=m[2];const name=comma<0?"":line.slice(comma+1).trim();meta={name:name||attrs["tvg-name"]||attrs["tvg-id"]||"",logo:attrs["tvg-logo"]||"",group:attrs["group-title"]||"",country:attrs["tvg-country"]||"",language:attrs["tvg-language"]||""};continue;}if(line.startsWith("#")||!meta)continue;let u;try{u=new URL(line);}catch{skipped++;meta=null;continue;}if(!isVideoSource(u.href)||!publicHttpsUrl(u.href)){skipped++;meta=null;continue;}const country=countryCode(meta.country,defaultCountry);if(!country||!COUNTRIES.includes(country)||!meta.name||/(adult|nsfw|porn|erotic|xxx|18\s*\+)/i.test(meta.name+" "+meta.group)){skipped++;meta=null;continue;}const logo=publicHttpsUrl(meta.logo);entries.push({name:meta.name.slice(0,100),country,category:categoryFromGroup(meta.group),language:meta.language.slice(0,40),logo:logo?logo.href:"",url:u.href,group:meta.group.slice(0,80),feedUrl:feedUrl||"",evidence});meta=null;if(entries.length>=500)break;}return {entries,skipped};}
+
+const MAX_CHANNEL_SOURCES=50;
+const FREE_TV_COUNTRY_SLUGS={AR:"argentina",BR:"brazil",CL:"chile",UY:"uruguay",PY:"paraguay",BO:"bolivia",PE:"peru",EC:"ecuador",CO:"colombia",VE:"venezuela",MX:"mexico",CR:"costa_rica",CU:"cuba",DO:"dominican_republic",SV:"el_salvador",GT:"guatemala",HN:"honduras",NI:"nicaragua",PA:"panama",PR:"puerto_rico"};
+function inferSportsCategory(name,group=""){
+ const text=String(name||"")+" "+String(group||"");
+ const normalized=text.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ return /sport|depor|futbol|football|soccer|futebol|basket|basquet|tenis|tennis|rugby|voleibol|volleyball|hockey|golf|cricket|racing|motorsport|motor sport|formula\s*1|\bf1\b|olimp|boxing|boxeo|ufc|mma|lucha libre/.test(normalized)?"sports":categoryFromGroup(group);
+}
+
 export async function onRequest(context){const {request,env}=context;if(!env.DB)return json({error:"service_unavailable"},503);const actor=await requireAdmin(request,env);if(!actor)return json({error:"forbidden"},403);const url=new URL(request.url),parts=url.pathname.split("/").filter(Boolean),resource=parts[2],id=parts[3];const now=Math.floor(Date.now()/1000);
 if(request.method==="GET"&&resource==="users"){const r=await env.DB.prepare("SELECT id,email,role,status,created_at FROM users ORDER BY created_at DESC LIMIT 500").all();const rows=r.results||[];const permissions=await env.DB.prepare("SELECT user_id,category FROM user_category_permissions").all();const channelPermissions=await env.DB.prepare("SELECT user_id,channel_id FROM user_channel_permissions").all();const channelConfigured=await env.DB.prepare("SELECT user_id FROM user_channel_settings").all();const configured=await env.DB.prepare("SELECT user_id FROM user_category_settings").all();const byUser={};for(const p of permissions.results||[])(byUser[p.user_id]??=[]).push(p.category);const configuredIds=new Set((configured.results||[]).map(x=>x.user_id));const byChannel={};for(const p of channelPermissions.results||[])(byChannel[p.user_id]??=[]).push(p.channel_id);const channelConfiguredIds=new Set((channelConfigured.results||[]).map(x=>x.user_id));return json({users:rows.map(u=>({...u,categories:configuredIds.has(u.id)?(byUser[u.id]||[]):CATEGORIES,channelIds:channelConfiguredIds.has(u.id)?(byChannel[u.id]||[]):null}))});}
 if(request.method==="GET"&&resource==="channels"){const r=await env.DB.prepare("SELECT id,name,country,category,enabled,created_at,sources_json FROM channels ORDER BY name LIMIT 500").all();return json({channels:(r.results||[]).map(row=>{let meta={};try{meta=JSON.parse(row.sources_json||"[]")[0]||{};}catch{}return {id:row.id,name:row.name,country:row.country,category:row.category,enabled:!!row.enabled,created_at:row.created_at,source:typeof meta.url==="string"?meta.url:"",sources:(()=>{try{return JSON.parse(row.sources_json||"[]").map(x=>x.url).filter(Boolean)}catch{return []}})(),evidence:typeof meta.evidence==="string"?meta.evidence:"",website:typeof meta.website==="string"?meta.website:"",logo:typeof meta.logo==="string"?meta.logo:"",language:typeof meta.language==="string"?meta.language:"",description:typeof meta.description==="string"?meta.description:"",directory:meta.directory||"",verification:meta.verification&&typeof meta.verification==="object"?meta.verification:null};})});}
@@ -299,6 +308,163 @@ if(resource==="discover-playlists"&&request.method==="POST"){
  const elapsedMs=Date.now()-startedAt,notChecked=Math.max(0,candidates.length-checked.length);
  return json({ok:true,source:"Teleonline",country:selectedCountry,category:selectedCategory,requestedLimit:limit,timeBudgetSeconds,elapsedMs,countriesRead:directory.countries.length,countriesMatched,channelsScanned,channelsWithOptions,directOptionsFound,categoryCounts,candidatesFound:candidates.length,checked:checked.length,verified:checked.filter(x=>x.probe.ok).length,verifiedOptions:checked.reduce((n,x)=>n+(x.verifiedSources?.length||0),0),failed,added,enriched,alreadyConfigured,withoutStream,skipped,notChecked,results:checked.map(x=>({name:x.name,country:x.country,category:x.category,ok:x.probe.ok,options:x.verifiedSources?.length||0,code:x.probe.code,kind:x.probe.kind||"",message:x.probe.message,added:!!x.probe.ok})),directoryUrl});
 }
+
+if(resource==="discover-all-playlists"&&request.method==="POST"){
+ const selectedCountry=String(body.country||"ALL").trim().toUpperCase();
+ const rawCategory=String(body.category??"sports").trim();
+ const selectedCategory=!rawCategory||rawCategory.toLowerCase()==="all"?"ALL":rawCategory.toLowerCase();
+ if(selectedCountry!=="ALL"&&!COUNTRIES.includes(selectedCountry))return json({error:"invalid_country"},400);
+ if(selectedCategory!=="ALL"&&!CATEGORIES.includes(selectedCategory))return json({error:"invalid_category"},400);
+ const requestedLimit=Number(body.limit??120);
+ const limit=Math.max(1,Math.min(200,Number.isFinite(requestedLimit)?Math.floor(requestedLimit):120));
+ const requestedBudget=Number(body.timeBudgetSeconds??25);
+ const timeBudgetSeconds=Math.max(8,Math.min(25,Number.isFinite(requestedBudget)?Math.floor(requestedBudget):25));
+ const startedAt=Date.now(),deadline=startedAt+timeBudgetSeconds*1000;
+ const sourceDefinitions=[];
+ if(selectedCategory==="ALL"||selectedCategory==="sports"){
+  sourceDefinitions.push({id:"iptv-org-sports",name:"iptv-org · Sports",url:"https://iptv-org.github.io/iptv/categories/sports.m3u",directoryUrl:"https://github.com/iptv-org/iptv",evidence:"https://github.com/iptv-org/iptv",category:"sports",defaultCountry:""});
+ }
+ const countryCodes=selectedCountry==="ALL"?Object.keys(FREE_TV_COUNTRY_SLUGS):[selectedCountry];
+ for(const code of countryCodes){
+  const slug=FREE_TV_COUNTRY_SLUGS[code];
+  if(!slug)continue;
+  sourceDefinitions.push({id:"free-tv-"+code,name:"Free-TV/IPTV · "+code,url:"https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_"+slug+".m3u8",directoryUrl:"https://github.com/Free-TV/IPTV",evidence:"https://github.com/Free-TV/IPTV",category:"",defaultCountry:code});
+ }
+ const candidates=new Map();
+ let sourcesRead=0,sourcesFailed=0,entriesScanned=0,entriesSkipped=0,teleonlineScanned=0;
+ const addCandidate=(record)=>{
+  const name=String(record.name||"").trim().slice(0,100),country=String(record.country||"").toUpperCase();
+  if(!name||!COUNTRIES.includes(country)||/(adult|nsfw|porn|erotic|xxx|18\s*\+)/i.test(name))return;
+  const category=record.category==="sports"?"sports":inferSportsCategory(name,record.group||"");
+  if(selectedCategory!=="ALL"&&category!==selectedCategory)return;
+  if(selectedCountry!=="ALL"&&country!==selectedCountry)return;
+  const key=country+"|"+normalizeChannelName(name);
+  let group=candidates.get(key);
+  if(!group){group={name,country,category,logo:record.logo||"",sources:[]};candidates.set(key,group);}
+  if(category==="sports")group.category="sports";
+  if(!group.logo&&record.logo)group.logo=record.logo;
+  const safe=publicHttpsUrl(String(record.url||""));
+  if(!safe||!DIRECT_VIDEO_EXTENSIONS.includes(directVideoExtension(safe)))return;
+  if(group.sources.some(item=>item.url===safe.href))return;
+  if(group.sources.length>=MAX_CHANNEL_SOURCES)return;
+  group.sources.push({
+   url:safe.href,logo:record.logo||"",description:"Encontrado en "+String(record.directory||"directorio público")+" · pendiente de revisión.",
+   evidence:String(record.evidence||""),website:String(record.website||""),feedUrl:String(record.feedUrl||""),
+   directory:String(record.directory||"directorio público"),directoryUrl:String(record.directoryUrl||""),
+   authorizationStatus:"pending",discoveredAt:now,verification:{status:"not_checked"}
+  });
+ };
+ const readPlaylist=async(source)=>{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
+  try{
+   const response=await fetch(source.url,{method:"GET",redirect:"manual",signal:controller.signal,headers:{"Accept":"application/x-mpegURL,application/vnd.apple.mpegurl,audio/x-mpegurl,text/plain,*/*","User-Agent":"Lumina-TV/1.5 authorized-public-playlist-discovery"}});
+   if(response.status>=300&&response.status<400||!response.ok)return {source,ok:false};
+   const length=Number(response.headers.get("content-length")||0);
+   if(length>1572864)return {source,ok:false};
+   const reader=response.body?.getReader();if(!reader)return {source,ok:false};
+   const decoder=new TextDecoder();let text="",bytes=0;
+   while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;if(bytes>1572864){await reader.cancel();return {source,ok:false};}text+=decoder.decode(part.value,{stream:true});}
+   text+=decoder.decode();
+   const parsed=parseM3UEntries(text,source.defaultCountry,source.url,source.evidence);
+   for(const entry of parsed.entries){
+    entriesScanned++;
+    const inferred=source.category==="sports"?"sports":inferSportsCategory(entry.name,entry.group);
+    addCandidate({...entry,category:inferred,directory:source.name,directoryUrl:source.directoryUrl,evidence:source.evidence});
+   }
+   entriesSkipped+=parsed.skipped;
+   return {source,ok:true,count:parsed.entries.length};
+  }catch{return {source,ok:false};}
+  finally{clearTimeout(timer);}
+ };
+ let cursor=0;
+ const workers=Array.from({length:Math.min(8,sourceDefinitions.length)},async()=>{
+  while(cursor<sourceDefinitions.length&&Date.now()<deadline-2500){
+   const source=sourceDefinitions[cursor++];
+   const result=await readPlaylist(source);
+   if(result.ok)sourcesRead++;else sourcesFailed++;
+  }
+ });
+ const teleonlineTask=(async()=>{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6500);
+  const directoryUrl="https://raw.githubusercontent.com/teleonline/listas/main/tv.json";
+  const directoryPage="https://github.com/teleonline/listas";
+  try{
+   const response=await fetch(directoryUrl,{method:"GET",redirect:"manual",signal:controller.signal,headers:{"Accept":"application/json","User-Agent":"Lumina-TV/1.5 public-directory-discovery"}});
+   if(!response.ok||response.status>=300&&response.status<400)return;
+   const size=Number(response.headers.get("content-length")||0);
+   if(size>5242880)return;
+   const directory=await response.json();
+   if(!Array.isArray(directory?.countries))return;
+   const cleanCountry=value=>{
+    const raw=String(value||"").trim(),direct=countryCode(raw);
+    return direct||countryCode(raw.replace(/^[^A-Za-zÀ-ÿ]+/,"").trim());
+   };
+   for(const countryRecord of directory.countries){
+    const recordCountry=cleanCountry(countryRecord?.name||countryRecord?.country||countryRecord?.code);
+    for(const ambit of countryRecord?.ambits||[]){
+     if(/adult|nsfw|porn|erotic|xxx|18\s*\+/i.test(String(ambit?.name||"")))continue;
+     for(const item of ambit?.channels||[]){
+      teleonlineScanned++;
+      const country=recordCountry||cleanCountry(item?.country);
+      const name=String(item?.name||"").trim().slice(0,100);
+      const group=[ambit?.name,item?.category,item?.group,item?.genre,item?.type].filter(Boolean).join(" ");
+      const category=categoryFromGroup(group+" "+name);
+      if(!name||!COUNTRIES.includes(country)||(selectedCountry!=="ALL"&&country!==selectedCountry))continue;
+      if(selectedCategory!=="ALL"&&category!==selectedCategory)continue;
+      const website=publicHttpsUrl(String(item?.web||""));
+      const logo=publicHttpsUrl(String(item?.logo||""));
+      const options=Array.isArray(item?.options)?item.options:[];
+      for(const option of options){
+       addCandidate({name,country,category,group,url:option?.url,logo:logo?logo.href:"",website:website?website.href:"",evidence:website?website.href:directoryPage,directory:"Teleonline",directoryUrl:directoryPage,feedUrl:directoryUrl});
+      }
+     }
+    }
+   }
+  }catch{}finally{clearTimeout(timer);}
+ })();
+ await Promise.all([...workers,teleonlineTask]);
+ const groups=[...candidates.values()].sort((a,b)=>(a.category==="sports"?0:1)-(b.category==="sports"?0:1)||a.country.localeCompare(b.country)||a.name.localeCompare(b.name));
+ const selected=groups.slice(0,limit);
+ let probesRun=0,channelsAdded=0,channelsEnriched=0,optionsAdded=0,alreadyConfigured=0,capped=0;
+ const existingResult=await env.DB.prepare("SELECT id,name,country,category,sources_json,enabled FROM channels LIMIT 5000").all();
+ const existing=new Map();
+ for(const row of existingResult.results||[]){
+  const key=String(row.country||"")+"|"+normalizeChannelName(row.name);
+  let oldSources=[];try{oldSources=JSON.parse(row.sources_json||"[]").filter(x=>x&&typeof x==="object");}catch{}
+  existing.set(key,{...row,oldSources,meta:oldSources[0]||{}});
+ }
+ const statements=[];
+ for(const group of selected){
+  const previous=existing.get(group.country+"|"+normalizeChannelName(group.name));
+  const oldSources=previous?.oldSources||[];
+  const existingUrls=new Set(oldSources.map(item=>String(item.url||"")).filter(Boolean));
+  const additions=group.sources.filter(item=>!existingUrls.has(item.url));
+  const mergedSources=[...oldSources,...additions].slice(0,MAX_CHANNEL_SOURCES);
+  const addedForGroup=mergedSources.length-oldSources.length;
+  if(addedForGroup<=0){alreadyConfigured++;continue;}
+  if(additions.length>addedForGroup)capped+=additions.length-addedForGroup;
+  const primary=mergedSources[0]||{};
+  const meta=previous?.meta||primary;
+  const finalSources=mergedSources.map((item,index)=>({...item,slot:index+1}));
+  if(previous){
+   const nextCategory=previous.category==="general"&&group.category==="sports"?"sports":previous.category;
+   statements.push(env.DB.prepare("UPDATE channels SET category=?,sources_json=?,updated_at=? WHERE id=?").bind(nextCategory,JSON.stringify(finalSources),now,previous.id));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_sources_discovered_pending","channel",previous.id,now));
+   channelsEnriched++;optionsAdded+=addedForGroup;
+   previous.oldSources=finalSources;previous.meta=meta;
+  }else{
+   const channelId=crypto.randomUUID();
+   statements.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,group.name,group.country,group.category,JSON.stringify(finalSources),0,now,now));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_sources_discovered_pending","channel",channelId,now));
+   existing.set(group.country+"|"+normalizeChannelName(group.name),{id:channelId,name:group.name,country:group.country,category:group.category,enabled:0,oldSources:finalSources,meta:primary});
+   channelsAdded++;optionsAdded+=addedForGroup;
+  }
+ }
+ for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
+ const elapsedMs=Date.now()-startedAt;
+ return json({ok:true,source:"multi-directory",country:selectedCountry,category:selectedCategory,elapsedMs,timeBudgetSeconds,sourcesRequested:sourceDefinitions.length,sourcesRead,sourcesFailed,entriesScanned,entriesSkipped,teleonlineScanned,candidatesFound:groups.length,channelsProcessed:selected.length,channelsAdded,channelsEnriched,alreadyConfigured,optionsAdded,capped,maxOptionsPerChannel:MAX_CHANNEL_SOURCES,probesRun,results:selected.slice(0,100).map(group=>({name:group.name,country:group.country,category:group.category,options:group.sources.length,directories:[...new Set(group.sources.map(item=>item.directory))]})),notice:"Los enlaces encontrados quedan pendientes. Que una señal sea pública o responda técnicamente no acredita derechos de retransmisión."});
+}
+
 if(resource==="import-m3u"&&request.method==="POST"){
  if(body.rightsConfirmed!==true)return json({error:"rights_confirmation_required"},400);
  const evidenceUrl=publicHttpsUrl(String(body.evidence||""));if(!evidenceUrl)return json({error:"invalid_evidence"},400);
