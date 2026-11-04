@@ -1,30 +1,23 @@
-# MiniOS APK Port — Web App Catalog
+# Lúmina TV
 
-This repository stores **MiniOS web applications** (`.mapp`). It does not store Android APK binaries and does not convert APKs automatically.
+Plataforma independiente enfocada exclusivamente en televisión en vivo. La aplicación web se sirve desde Cloudflare Pages y utiliza Cloudflare D1 para cuentas, sesiones, catálogo y permisos.
 
-## Structure
+## Componentes
 
-- `repository.json`: catalog index consumed by MiniOS.
-- `apps/<app-id>/manifest.json`: metadata and entry point for an app.
-- `apps/<app-id>/index.html`: browser-based application.
-- `apps/<app-id>/assets/`: icons, images, fonts and other static assets.
+- `apps/minios-tv/`: interfaz de televisión en vivo y panel de administración.
+- `functions/api/auth/`: registro, inicio/cierre de sesión y gestión de contraseña.
+- `functions/api/channels.js`: catálogo filtrado por permisos.
+- `functions/api/admin/`: administración de usuarios, permisos y señales.
+- `migrations/`: esquema de base de datos.
 
-## App format (v1)
+> El identificador de carpeta y algunas rutas API conservan temporalmente el nombre técnico anterior para no romper despliegues ni sesiones existentes. La identidad visible del producto es Lúmina TV.
 
-Each app has a `manifest.json` with:
-- `id`: stable, lowercase identifier.
-- `name`, `version`, `description`, `author`.
-- `entry`: relative path to the app's HTML entry point.
-- `permissions`: requested MiniOS capabilities (keep this minimal).
-- `runtime`: currently `web`.
+## Descubrimiento y derechos de transmisión
 
-Apps run in a compatible browser. The ESP32 is a controller/API device; it does not execute Android APKs or render the app UI.
+El descubrimiento público puede completar metadatos (nombre, país, idioma y sitio oficial), pero no demuestra que exista una URL de streaming ni que se permita retransmitirla. Una señal solo debe publicarse cuando la URL provenga del titular o de una fuente con autorización verificable. Los canales pendientes no se muestran a los usuarios.
 
-## Publishing
+La disponibilidad de reproducción depende del proveedor, el navegador, CORS, formatos y restricciones regionales o de acceso. No se incluyen listas pirateadas ni se eluden controles de acceso.
 
-1. Add an app folder under `apps/`.
-2. Add its manifest and web files.
-3. Add its metadata to `repository.json`.
-4. Enable GitHub Pages for this repository (Settings → Pages → Deploy from a branch → main → / (root)).
+## Desarrollo y despliegue
 
-Use only apps and media you have permission to distribute. Do not upload copyrighted APKs, DRM-protected content, private credentials, or access tokens.
+Usá el entorno Preview de Cloudflare Pages y la base D1 de Preview para probar cambios. No ejecutes migraciones ni despliegues en producción sin revisar y autorizar expresamente esos pasos.
