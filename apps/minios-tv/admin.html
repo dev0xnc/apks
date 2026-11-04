@@ -126,12 +126,21 @@ $("resetUserPassword").addEventListener("click",async()=>{
  try{const r=await fetch("/api/admin/users/"+encodeURIComponent(id)+"/password",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});const d=await r.json();if(!r.ok)throw Error(d.error||"No se pudo cambiar la contraseña");$("temporaryPassword").value="";$("status").textContent="Contraseña restablecida. Compartila por un canal seguro.";}catch(e){$("status").textContent=e.message}
 });
 $("autoDiscover").addEventListener("click",async()=>{
- const btn=$("autoDiscover"),terms=["canales de televisión de Argentina","canales de televisión de Brasil","canales de televisión de Chile","canales de televisión de Uruguay","canales de televisión de Paraguay","canales de televisión de Perú","canales de televisión de Colombia","canales de televisión de México","canales de televisión de Ecuador"];
+ const btn=$("autoDiscover"),terms=["canales de televisión de Argentina","canales de televisión de Brasil","canales de televisión de Chile","canales de televisión de Uruguay","canales de televisión de Paraguay","canales de televisión de Bolivia","canales de televisión de Perú","canales de televisión de Ecuador","canales de televisión de Colombia","canales de televisión de Venezuela","canales de televisión de México","canales de televisión de Costa Rica","canales de televisión de Panamá","canales de televisión de Guatemala","canales de televisión de Honduras","canales de televisión de El Salvador","canales de televisión de Nicaragua","canales de televisión de Cuba","canales de televisión de República Dominicana","canales de televisión de Puerto Rico"];
  btn.disabled=true;const found=new Map();
- try{for(let i=0;i<terms.length;i++){btn.textContent="Buscando "+(i+1)+"/"+terms.length+"…";const r=await fetch("/api/admin/discover?q="+encodeURIComponent(terms[i]),{credentials:"same-origin"});const d=await r.json();if(!r.ok)throw Error(d.error||"Error de búsqueda");for(const x of d.results||[])found.set(x.id,x);}
-  window.discoveryResults=Object.fromEntries(found);$("results").innerHTML=[...found.values()].map(x=>'<div class="result"><strong>'+String(x.label).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</strong><span class="muted">'+(x.countryName||"País no identificado")+' · '+(x.description||"")+'</span><div><a href="'+x.url+'" target="_blank" rel="noopener">Wikidata</a></div><button type="button" data-add="'+x.id+'">＋ Añadir como pendiente</button></div>').join("")||"No se encontraron candidatos.";
-  $("status").textContent=found.size+" candidatos encontrados. Revisalos y agregá solo los canales que correspondan.";
- }catch(e){$("status").textContent="No se pudo completar la búsqueda: "+e.message}finally{btn.disabled=false;btn.textContent="Descubrir canales automáticamente (Latinoamérica)"}
+ try{
+  for(let i=0;i<terms.length;i+=2){
+   const batch=terms.slice(i,i+2);
+   btn.textContent="Buscando países "+(i+1)+"-"+Math.min(i+batch.length,terms.length)+"/"+terms.length+"…";
+   const responses=await Promise.all(batch.map(async term=>{
+    const r=await fetch("/api/admin/discover?q="+encodeURIComponent(term),{credentials:"same-origin"});
+    const d=await r.json();if(!r.ok)throw Error(d.error||"Error de búsqueda");return d.results||[];
+   }));
+   for(const list of responses)for(const x of list)found.set(x.id,x);
+  }
+  if(typeof window.renderDiscoveryResults==="function")window.renderDiscoveryResults([...found.values()]);
+  $("status").textContent=found.size+" candidatos únicos encontrados en Latinoamérica. Revisalos antes de agregarlos como pendientes.";
+}catch(e){$("status").textContent="No se pudo completar la búsqueda: "+e.message}finally{btn.disabled=false;btn.textContent="Descubrir canales automáticamente (Latinoamérica)"}
 });
 window.refreshPermissionPanel=loadPermissionPanel;
 loadPermissionPanel();
