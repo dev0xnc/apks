@@ -102,7 +102,7 @@ if(resource==="import-m3u"&&request.method==="POST"){
  const parsed=parseM3UEntries(playlistText,defaultCountry,feedUrl,evidenceUrl.href);if(!parsed.entries.length)return json({error:"no_supported_entries",skipped:parsed.skipped},400);
  const existingResult=await env.DB.prepare("SELECT id,name,country,sources_json FROM channels LIMIT 1000").all();
  const existing=new Map();for(const row of existingResult.results||[]){const key=String(row.country||"")+"|"+normalizeChannelName(row.name);let meta={};try{meta=JSON.parse(row.sources_json)[0]||{};}catch{}existing.set(key,{...row,meta});}
- const statements=[],seen=new Set();let added=0,updated=0,duplicates=0;
+ const statements=[],seen=new Set();let added=0,updated=0,duplicates=0,disabled=0;
  for(const entry of parsed.entries){
   const key=entry.country+"|"+normalizeChannelName(entry.name);if(seen.has(key)){duplicates++;continue;}seen.add(key);
   const previous=existing.get(key);
@@ -118,8 +118,9 @@ if(resource==="import-m3u"&&request.method==="POST"){
    existing.set(key,{id:channelId,name:entry.name,country:entry.country,meta:{feedUrl}});added++;
   }
  }
+ if(feedUrl){for(const [key,row] of existing){if(row.meta.feedUrl===feedUrl&&!seen.has(key)){statements.push(env.DB.prepare("UPDATE channels SET enabled=0,updated_at=? WHERE id=?").bind(now,row.id));statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_removed","channel",row.id,now));disabled++;}}}
  for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
- return json({ok:true,added,updated,duplicates,skipped:parsed.skipped,feedUrl});
+ return json({ok:true,added,updated,duplicates,disabled,skipped:parsed.skipped,feedUrl});
 }
 if(resource==="users"&&id&&parts[4]==="channels"&&request.method==="PATCH"){
  const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();
