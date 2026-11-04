@@ -30,7 +30,7 @@ export async function onRequest({request,env}){
  for(const row of channelResult.results||[]){
   if(!visible(row))continue;
   const sources=parseSources(row.sources_json);
-  const safeSources=sources.filter(item=>item.authorizationStatus!=="pending"&&safeHttps(item.url));
+  const safeSources=sources.filter(item=>item.authorizationStatus!=="pending"&&(!item.authorizationStatus||item.verification?.ok===true)&&safeHttps(item.url));
   const safeExternalSources=sources.filter(item=>item.type==="official_page"&&item.authorizationStatus==="approved"&&item.authorizationScope==="external_link_only"&&safeHttps(item.website));
   const available=Number(row.enabled)===1&&(safeSources.length>0||safeExternalSources.length>0);
   const first=safeSources[0]||safeExternalSources[0]||{};
