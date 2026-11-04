@@ -30,9 +30,9 @@ export async function onRequest({request,env}){
  for(const row of channelResult.results||[]){
   if(!visible(row))continue;
   const sources=parseSources(row.sources_json);
-  const safeSources=sources.filter(item=>safeHttps(item.url));
+  const safeSources=sources.filter(item=>item.authorizationStatus!=="pending"&&safeHttps(item.url));
   const available=Number(row.enabled)===1&&safeSources.length>0;
-  const first=safeSources[0]||sources[0]||{};
+  const first=safeSources[0]||{};
   catalog.push({
    id:row.id,name:row.name,country:row.country||"",category:row.category,
    enabled:available,logo:safeHttps(first.logo)||"",website:safeHttps(first.website)||safeHttps(sources[0]?.website)||"",
@@ -41,7 +41,7 @@ export async function onRequest({request,env}){
   if(available){
    channels.push({
     id:row.id,channelId:row.id,name:row.name,url:safeHttps(safeSources[0].url),
-    sources:safeSources.map(source=>safeHttps(source.url)).filter(Boolean).slice(0,5),
+    sources:safeSources.map(source=>safeHttps(source.url)).filter(Boolean).slice(0,50),
     group:row.category,country:row.country||"",category:row.category,categories:[row.category],
     logo:safeHttps(first.logo)||"",description:String(first.description||"").slice(0,500),
     language:String(first.language||"").slice(0,40),source:"admin"
