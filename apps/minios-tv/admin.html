@@ -52,9 +52,17 @@ function renderChannels(){
 
 $("userSearch").oninput=renderUsers;$("users").onclick=async e=>{const save=e.target.closest("[data-save-permissions]");if(save){const id=save.dataset.savePermissions;const categories=[...document.querySelectorAll(`[data-user-permissions="${CSS.escape(id)}"]:checked`)].map(x=>x.dataset.permission);save.disabled=true;try{await api("users/"+encodeURIComponent(id)+"/categories",{method:"PATCH",body:JSON.stringify({categories})});$("status").textContent="Permisos de categorías guardados.";await load();}catch(x){$("status").textContent=x.message;save.disabled=false;}return;}const b=e.target.closest("[data-user]");if(!b)return;try{await api("users/"+encodeURIComponent(b.dataset.user),{method:"PATCH",body:JSON.stringify({status:b.dataset.status})});await load();}catch(x){$("status").textContent=x.message;}};
 let previewHls=null,previewDash=null;
-function stopChannelPreview(){
- const video=$("channelPreviewVideo");video.pause();if(previewHls){previewHls.destroy();previewHls=null;}if(previewDash){previewDash.reset();previewDash=null;}video.removeAttribute("src");video.load();$("channelPreviewDialog").close();
+function disposeChannelPreview(){
+ const video=$("channelPreviewVideo");video.pause();
+ if(previewHls){previewHls.destroy();previewHls=null;}
+ if(previewDash){previewDash.reset();previewDash=null;}
+ video.removeAttribute("src");video.load();
 }
+function stopChannelPreview(){
+ disposeChannelPreview();
+ const dialog=$("channelPreviewDialog");if(dialog.open)dialog.close();
+}
+$("channelPreviewDialog").addEventListener("close",disposeChannelPreview);
 async function previewChannel(id){
  const ch=channels.find(x=>x.id===id);if(!ch||!ch.source){$("status").textContent="Este canal todavía no tiene una fuente directa para probar.";return;}
  const dialog=$("channelPreviewDialog"),video=$("channelPreviewVideo");
