@@ -121,7 +121,9 @@ if(resource==="discover"&&request.method==="POST"){
 }
 if(resource==="discover-playlists"&&request.method==="POST"){
  const selectedCountry=String(body.country||"ALL").toUpperCase();
+ const selectedCategory=String(body.category||"ALL").toLowerCase();
  if(selectedCountry!=="ALL"&&!COUNTRIES.includes(selectedCountry))return json({error:"invalid_country"},400);
+ if(selectedCategory!=="ALL"&&!CATEGORIES.includes(selectedCategory))return json({error:"invalid_category"},400);
  const requestedLimit=Number(body.limit??20);
  const limit=Math.max(1,Math.min(60,Number.isFinite(requestedLimit)?Math.floor(requestedLimit):20));
  const requestedBudget=Number(body.timeBudgetSeconds??12);
@@ -149,6 +151,7 @@ if(resource==="discover-playlists"&&request.method==="POST"){
   const country=cleanCountry(countryRecord.name);
   if(!COUNTRIES.includes(country)||(selectedCountry!=="ALL"&&country!==selectedCountry))continue;
   for(const ambit of countryRecord.ambits||[]){
+   if(selectedCategory!=="ALL"&&categoryFromGroup(ambit.name||"")!==selectedCategory)continue;
    for(const item of ambit.channels||[]){
     const name=String(item?.name||"").trim().slice(0,100);
     if(!name){skipped++;continue;}
@@ -211,7 +214,7 @@ if(resource==="discover-playlists"&&request.method==="POST"){
  }
  for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
  const elapsedMs=Date.now()-startedAt,notChecked=Math.max(0,candidates.length-checked.length);
- return json({ok:true,source:"Teleonline",country:selectedCountry,requestedLimit:limit,timeBudgetSeconds,elapsedMs,candidatesFound:candidates.length,checked:checked.length,verified:checked.filter(x=>x.probe.ok).length,verifiedOptions:checked.reduce((n,x)=>n+(x.verifiedSources?.length||0),0),failed,added,enriched,alreadyConfigured,withoutStream,skipped,notChecked,results:checked.map(x=>({name:x.name,country:x.country,ok:x.probe.ok,options:x.verifiedSources?.length||0,code:x.probe.code,kind:x.probe.kind||"",message:x.probe.message,added:!!x.probe.ok})),directoryUrl});
+ return json({ok:true,source:"Teleonline",country:selectedCountry,category:selectedCategory,requestedLimit:limit,timeBudgetSeconds,elapsedMs,candidatesFound:candidates.length,checked:checked.length,verified:checked.filter(x=>x.probe.ok).length,verifiedOptions:checked.reduce((n,x)=>n+(x.verifiedSources?.length||0),0),failed,added,enriched,alreadyConfigured,withoutStream,skipped,notChecked,results:checked.map(x=>({name:x.name,country:x.country,category:x.category,ok:x.probe.ok,options:x.verifiedSources?.length||0,code:x.probe.code,kind:x.probe.kind||"",message:x.probe.message,added:!!x.probe.ok})),directoryUrl});
 }
 if(resource==="import-m3u"&&request.method==="POST"){
  if(body.rightsConfirmed!==true)return json({error:"rights_confirmation_required"},400);
