@@ -41,7 +41,7 @@ export async function onRequest({request,env}){
   });
   if(available){
    channels.push({
-    id:row.id,channelId:row.id,name:row.name,url:safeHttps(safeSources[0].url),
+    id:row.id,channelId:row.id,name:row.name,url:safeSources[0]?safeHttps(safeSources[0].url):"",
     sources:safeSources.map(source=>safeHttps(source.url)).filter(Boolean).slice(0,50),
     externalSources:safeExternalSources.map(source=>({website:safeHttps(source.website),provider:String(source.provider||"Fuente oficial").slice(0,120),access:String(source.access||"Consultar condiciones del proveedor").slice(0,180),description:String(source.description||"").slice(0,300)})).filter(source=>source.website).slice(0,50),
     group:row.category,country:row.country||"",category:row.category,categories:[row.category],
