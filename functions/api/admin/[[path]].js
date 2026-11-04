@@ -244,7 +244,7 @@ if(resource==="import-m3u"&&request.method==="POST"){
   const feed=publicHttpsUrl(body.sourceUrl.trim());if(!feed)return json({error:"invalid_feed_url"},400);feedUrl=feed.href;
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
   try{
-   const response=await fetch(feed.href,{method:"GET",redirect:"manual",signal:controller.signal,headers:{"Accept":"application/x-mpegURL,application/vnd.apple.mpegurl,audio/x-mpegurl,text/plain,*/*","User-Agent":"Lumina-TV/1.0 playlist importer"}});
+   const response=await fetch(feed.href,{method:"GET",redirect:"manual",signal:controller.signal,headers:{"Accept":"application/x-mpegURL,application/vnd.apple.mpegurl,audio/x-mpegurl,text/plain,*/*","User-Agent":"Lumina-TV/1.0 authorized playlist importer"}});
    if(response.status>=300&&response.status<400)return json({error:"feed_redirect_blocked"},400);
    if(!response.ok)return json({error:"feed_fetch_failed",status:response.status},502);
    const reader=response.body?.getReader();if(!reader)return json({error:"feed_empty"},502);
@@ -255,28 +255,76 @@ if(resource==="import-m3u"&&request.method==="POST"){
  }else if(typeof body.playlistText==="string"){playlistText=body.playlistText;const size=new TextEncoder().encode(playlistText).length;if(size>1048576)return json({error:"feed_too_large"},413);}
  else return json({error:"feed_required"},400);
  if(!playlistText.trim())return json({error:"feed_empty"},400);
- const parsed=parseM3UEntries(playlistText,defaultCountry,feedUrl,evidenceUrl.href);if(!parsed.entries.length)return json({error:"no_supported_entries",skipped:parsed.skipped},400);
- const existingResult=await env.DB.prepare("SELECT id,name,country,sources_json FROM channels LIMIT 1000").all();
- const existing=new Map();for(const row of existingResult.results||[]){const key=String(row.country||"")+"|"+normalizeChannelName(row.name);let meta={};try{meta=JSON.parse(row.sources_json)[0]||{};}catch{}existing.set(key,{...row,meta});}
- const statements=[],seen=new Set();let added=0,updated=0,duplicates=0,disabled=0;
+ const parsed=parseM3UEntries(playlistText,defaultCountry,feedUrl,evidenceUrl.href);
+ if(!parsed.entries.length)return json({error:"no_supported_entries",skipped:parsed.skipped},400);
+ const grouped=new Map(),seen=new Set();
+ let duplicates=0,capped=0;
  for(const entry of parsed.entries){
-  const key=entry.country+"|"+normalizeChannelName(entry.name);if(seen.has(key)){duplicates++;continue;}seen.add(key);
+  const key=entry.country+"|"+normalizeChannelName(entry.name);
+  let group=grouped.get(key);
+  if(!group){group={name:entry.name,country:entry.country,category:entry.category,entries:[]};grouped.set(key,group);}
+  if(group.entries.some(item=>item.url===entry.url)){duplicates++;continue;}
+  group.entries.push(entry);
+  seen.add(key);
+ }
+ const existingResult=await env.DB.prepare("SELECT id,name,country,category,sources_json,enabled FROM channels LIMIT 5000").all();
+ const existing=new Map();
+ for(const row of existingResult.results||[]){
+  const key=String(row.country||"")+"|"+normalizeChannelName(row.name);
+  let sources=[];try{sources=JSON.parse(row.sources_json||"[]").filter(x=>x&&typeof x==="object");}catch{}
+  existing.set(key,{...row,sources});
+ }
+ const statements=[];let added=0,updated=0,disabled=0,optionsAdded=0;
+ const feedGroups=new Map();
+ for(const [key,group] of grouped){
+  const incoming=group.entries.map(entry=>({
+   url:entry.url,language:entry.language,logo:entry.logo,
+   description:entry.group?"Grupo: "+entry.group:"Importado desde lista M3U autorizada",
+   evidence:evidenceUrl.href,feedUrl:entry.feedUrl||"",
+   directory:"authorized-m3u",authorizationStatus:"approved",authorizationScope:"direct_feed",
+   verification:{status:"not_checked"}
+  }));
   const previous=existing.get(key);
-  const metadata={url:entry.url,language:entry.language,logo:entry.logo,description:entry.group?"Grupo: "+entry.group:"Importado desde lista M3U autorizada",evidence:evidenceUrl.href,feedUrl:entry.feedUrl};
+  let merged=[];
   if(previous){
-   if(!feedUrl||previous.meta.feedUrl!==feedUrl){duplicates++;continue;}
-   statements.push(env.DB.prepare("UPDATE channels SET name=?,country=?,category=?,sources_json=?,enabled=1,updated_at=? WHERE id=?").bind(entry.name,entry.country,entry.category,JSON.stringify([metadata]),now,previous.id));
-   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_refresh","channel",previous.id,now));updated++;
+   const previousSources=previous.sources||[];
+   const preserved=feedUrl?previousSources.filter(item=>item.feedUrl!==feedUrl):previousSources;
+   const oldForThisFeed=feedUrl?previousSources.filter(item=>item.feedUrl===feedUrl):[];
+   merged=[...preserved,...incoming];
+   if(!feedUrl){
+    for(const old of previousSources)if(!incoming.some(item=>item.url===old.url)&&!merged.some(item=>item.url===old.url))merged.push(old);
+   }
+   merged=[...new Map(merged.filter(item=>item.url).map(item=>[item.url,item])).values()];
+   if(merged.length>MAX_CHANNEL_SOURCES){capped+=merged.length-MAX_CHANNEL_SOURCES;merged=merged.slice(0,MAX_CHANNEL_SOURCES);}
+   const beforeUrls=new Set(previousSources.map(item=>item.url).filter(Boolean));
+   optionsAdded+=merged.filter(item=>!beforeUrls.has(item.url)).length;
+   if(!optionsAdded&&JSON.stringify(previousSources)===JSON.stringify(merged)){duplicates+=incoming.length;continue;}
+   statements.push(env.DB.prepare("UPDATE channels SET category=?,sources_json=?,enabled=0,updated_at=? WHERE id=?").bind(group.category,JSON.stringify(merged),now,previous.id));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_import_pending","channel",previous.id,now));
+   previous.sources=merged;previous.enabled=0;updated++;
   }else{
+   merged=incoming.slice(0,MAX_CHANNEL_SOURCES);
+   if(incoming.length>MAX_CHANNEL_SOURCES)capped+=incoming.length-MAX_CHANNEL_SOURCES;
    const channelId=crypto.randomUUID();
-   statements.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,entry.name,entry.country,entry.category,JSON.stringify([metadata]),1,now,now));
-   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_import","channel",channelId,now));
-   existing.set(key,{id:channelId,name:entry.name,country:entry.country,meta:{feedUrl}});added++;
+   statements.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,group.name,group.country,group.category,JSON.stringify(merged),0,now,now));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_import_pending","channel",channelId,now));
+   existing.set(key,{id:channelId,name:group.name,country:group.country,category:group.category,sources:merged,enabled:0});added++;optionsAdded+=merged.length;
+  }
+  if(feedUrl)feedGroups.set(key,true);
+ }
+ if(feedUrl){
+  for(const [key,row] of existing){
+   if(seen.has(key))continue;
+   const previousSources=row.sources||[];
+   if(!previousSources.some(item=>item.feedUrl===feedUrl))continue;
+   const remaining=previousSources.filter(item=>item.feedUrl!==feedUrl);
+   statements.push(env.DB.prepare("UPDATE channels SET sources_json=?,enabled=?,updated_at=? WHERE id=?").bind(JSON.stringify(remaining),remaining.length?Number(row.enabled||0):0,now,row.id));
+   statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_removed","channel",row.id,now));
+   row.sources=remaining;disabled++;
   }
  }
- if(feedUrl){for(const [key,row] of existing){if(row.meta.feedUrl===feedUrl&&!seen.has(key)){statements.push(env.DB.prepare("UPDATE channels SET enabled=0,updated_at=? WHERE id=?").bind(now,row.id));statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_removed","channel",row.id,now));disabled++;}}}
  for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
- return json({ok:true,added,updated,duplicates,disabled,skipped:parsed.skipped,feedUrl});
+ return json({ok:true,added,updated,optionsAdded,duplicates,disabled,capped,skipped:parsed.skipped,feedUrl,pending:true,maxOptionsPerChannel:MAX_CHANNEL_SOURCES,notice:"Las entradas importadas quedan pendientes y desactivadas. Revisá los derechos y probá cada opción antes de activarlas."});
 }
 if(resource==="users"&&id&&parts[4]==="channels"&&request.method==="PATCH"){
  const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();
