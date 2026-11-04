@@ -39,15 +39,13 @@ export async function onRequest({request,env}){
    status:available?"available":"pending"
   });
   if(available){
-   for(let index=0;index<safeSources.length;index++){
-    const source=safeSources[index];
-    channels.push({
-     id:row.id+"-"+index,channelId:row.id,name:row.name,url:safeHttps(source.url),
-     group:row.category,country:row.country||"",category:row.category,categories:[row.category],
-     logo:safeHttps(source.logo)||"",description:String(source.description||"").slice(0,500),
-     language:String(source.language||"").slice(0,40),source:"admin"
-    });
-   }
+   channels.push({
+    id:row.id,channelId:row.id,name:row.name,url:safeHttps(safeSources[0].url),
+    sources:safeSources.map(source=>safeHttps(source.url)).filter(Boolean).slice(0,5),
+    group:row.category,country:row.country||"",category:row.category,categories:[row.category],
+    logo:safeHttps(first.logo)||"",description:String(first.description||"").slice(0,500),
+    language:String(first.language||"").slice(0,40),source:"admin"
+   });
   }
  }
  return json({channels,catalog,activeCount:channels.length,pendingCount:catalog.filter(x=>!x.enabled).length});
