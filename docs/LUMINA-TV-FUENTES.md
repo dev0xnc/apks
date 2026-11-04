@@ -59,3 +59,6 @@ La tabla de Administración separa las acciones **Editar** y **Activar / desacti
 - Las listas locales importadas desde la aplicación de TV se guardan solo en ese navegador; para compartir un catálogo se usa el importador de Administración.
 
 Para una actualización automática de servidor 24/7 sería necesario configurar un Cron Trigger de Cloudflare Worker por separado. La actualización cada 24 horas documentada aquí depende de que se abra o permanezca abierta la página de Administración.
+## Migración de categorías
+
+La ampliación de permisos por categoría requiere aplicar `migrations/0005_expand_channel_categories.sql` a la base D1 de **Preview** (`minios-tv-preview-db`). La publicación de Pages no ejecuta automáticamente esta migración. No aplicar este archivo a la base de Producción durante las pruebas.
