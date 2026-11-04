@@ -31,8 +31,9 @@ export async function onRequest({request,env}){
   if(!visible(row))continue;
   const sources=parseSources(row.sources_json);
   const safeSources=sources.filter(item=>item.authorizationStatus!=="pending"&&safeHttps(item.url));
-  const available=Number(row.enabled)===1&&safeSources.length>0;
-  const first=safeSources[0]||{};
+  const safeExternalSources=sources.filter(item=>item.type==="official_page"&&item.authorizationStatus==="approved"&&item.authorizationScope==="external_link_only"&&safeHttps(item.website));
+  const available=Number(row.enabled)===1&&(safeSources.length>0||safeExternalSources.length>0);
+  const first=safeSources[0]||safeExternalSources[0]||{};
   catalog.push({
    id:row.id,name:row.name,country:row.country||"",category:row.category,
    enabled:available,logo:safeHttps(first.logo)||"",website:safeHttps(first.website)||safeHttps(sources[0]?.website)||"",
@@ -42,6 +43,7 @@ export async function onRequest({request,env}){
    channels.push({
     id:row.id,channelId:row.id,name:row.name,url:safeHttps(safeSources[0].url),
     sources:safeSources.map(source=>safeHttps(source.url)).filter(Boolean).slice(0,50),
+    externalSources:safeExternalSources.map(source=>({website:safeHttps(source.website),provider:String(source.provider||"Fuente oficial").slice(0,120),access:String(source.access||"Consultar condiciones del proveedor").slice(0,180),description:String(source.description||"").slice(0,300)})).filter(source=>source.website).slice(0,50),
     group:row.category,country:row.country||"",category:row.category,categories:[row.category],
     logo:safeHttps(first.logo)||"",description:String(first.description||"").slice(0,500),
     language:String(first.language||"").slice(0,40),source:"admin"
