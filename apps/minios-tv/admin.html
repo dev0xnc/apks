@@ -45,15 +45,16 @@ function updateChannelSelection(){
 function renderChannels(){
  $("channels").innerHTML="<table><thead><tr><th></th><th>Canal</th><th>País</th><th>Categoría</th><th>Origen</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>"+channels.map(x=>{
   const verified=x.verification?.status==="verified";
+  const external=(x.externalSources||[]).filter(item=>item&&item.website);
+  const optionCount=(x.sources||[]).length+external.length;
   const state=x.enabled?"Activo":verified?"Compatible verificada · pendiente de revisión":"Pendiente de señal";
   const siteLink=x.website?'<a target="_blank" rel="noopener noreferrer" href="'+esc(x.website)+'">Sitio web</a>':"";
-  const origin=x.directory==="teleonline"?(siteLink||"Directorio Teleonline · revisar"):x.directory==="iptv-org"?"Metadatos · iptv-org"+(siteLink?" · "+siteLink:""):x.directory==="wikidata"?"Metadatos · Wikidata"+(siteLink?" · "+siteLink:""):(x.source?"Fuente cargada":"Sin fuente");
-  const preview=x.source?'<button type="button" data-preview-channel="'+esc(x.id)+'">▶ Probar</button>':'<button type="button" disabled>Sin señal</button>';
-  return "<tr><td><input type='checkbox' data-select-channel='"+esc(x.id)+"' aria-label='Seleccionar "+esc(x.name)+"'></td><td>"+esc(x.name)+"</td><td>"+esc(x.country)+"</td><td>"+esc(x.category)+"</td><td>"+origin+"</td><td>"+state+(verified?"<br><small>"+esc(x.verification.kind||"Vídeo")+" · HTTP "+esc(x.verification.httpStatus||"")+"</small>":"")+"</td><td>"+preview+" <button type='button' data-edit-channel='"+esc(x.id)+"'>Editar</button> <button type='button' data-activate-channel='"+esc(x.id)+"'>Activar / desactivar</button> <button type='button' data-channel='"+esc(x.id)+"'>Eliminar</button></td></tr>";
+  const origin=external.length?"Proveedor oficial externo"+(siteLink?" · "+siteLink:""):x.directory==="iptv-org"?"Metadatos · iptv-org"+(siteLink?" · "+siteLink:""):x.directory==="wikidata"?"Metadatos · Wikidata"+(siteLink?" · "+siteLink:""):(x.source?"Fuente cargada":"Sin fuente");
+  const preview=x.source?'<button type="button" data-preview-channel="'+esc(x.id)+'">▶ Probar</button>':external.length?'<a target="_blank" rel="noopener noreferrer" href="'+esc(external[0].website)+'">Abrir oficial</a>':'<button type="button" disabled>Sin señal</button>';
+  return "<tr><td><input type='checkbox' data-select-channel='"+esc(x.id)+"' aria-label='Seleccionar "+esc(x.name)+"'></td><td>"+esc(x.name)+(optionCount?"<br><small>"+optionCount+" opciones</small>":"")+"</td><td>"+esc(x.country)+"</td><td>"+esc(x.category)+"</td><td>"+origin+"</td><td>"+state+(verified?"<br><small>"+esc(x.verification.kind||"Vídeo")+" · HTTP "+esc(x.verification.httpStatus||"")+"</small>":"")+"</td><td>"+preview+" <button type='button' data-edit-channel='"+esc(x.id)+"'>Editar</button> <button type='button' data-activate-channel='"+esc(x.id)+"'>Activar / desactivar</button> <button type='button' data-channel='"+esc(x.id)+"'>Eliminar</button></td></tr>";
  }).join("")+"</tbody></table>";
  updateChannelSelection();
 }
-
 $("userSearch").oninput=renderUsers;$("users").onclick=async e=>{const save=e.target.closest("[data-save-permissions]");if(save){const id=save.dataset.savePermissions;const categories=[...document.querySelectorAll(`[data-user-permissions="${CSS.escape(id)}"]:checked`)].map(x=>x.dataset.permission);save.disabled=true;try{await api("users/"+encodeURIComponent(id)+"/categories",{method:"PATCH",body:JSON.stringify({categories})});$("status").textContent="Permisos de categorías guardados.";await load();}catch(x){$("status").textContent=x.message;save.disabled=false;}return;}const b=e.target.closest("[data-user]");if(!b)return;try{await api("users/"+encodeURIComponent(b.dataset.user),{method:"PATCH",body:JSON.stringify({status:b.dataset.status})});await load();}catch(x){$("status").textContent=x.message;}};
 let previewHls=null,previewDash=null;
 function disposeChannelPreview(){
