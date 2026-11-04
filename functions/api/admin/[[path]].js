@@ -113,7 +113,7 @@ if(resource==="import-m3u"&&request.method==="POST"){
    statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_refresh","channel",previous.id,now));updated++;
   }else{
    const channelId=crypto.randomUUID();
-   statements.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(channelId,entry.name,entry.country,entry.category,JSON.stringify([metadata]),1,now,now));
+   statements.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,entry.name,entry.country,entry.category,JSON.stringify([metadata]),1,now,now));
    statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_feed_import","channel",channelId,now));
    existing.set(key,{id:channelId,name:entry.name,country:entry.country,meta:{feedUrl}});added++;
   }
