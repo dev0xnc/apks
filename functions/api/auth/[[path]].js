@@ -45,19 +45,45 @@ async function newSession(userId, env) {
     .bind(await digest(token), userId, now + SESSION_SECONDS, now, now).run();
   return token;
 }
-async function rateLimit(request, env, identity) {
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const bucket = await digest(ip + "|" + identity.toLowerCase());
+async function authBucket(request, identity) {
+  const ip = request.headers.get("CF-Connecting-IP");
+  const client = typeof ip === "string" && ip.trim() ? ip.trim() : "unknown";
+  return await digest(client + "|" + String(identity).toLowerCase());
+}
+async function checkRateLimit(request, env, identity, maxAttempts) {
+  const bucket = await authBucket(request, identity);
   const now = Math.floor(Date.now() / 1000);
   const row = await env.DB.prepare("SELECT attempts,window_started,blocked_until FROM auth_limits WHERE bucket=?").bind(bucket).first();
-  if (row && row.blocked_until > now) return false;
+  if (!row) return true;
+  if (row.blocked_until > now) return false;
+  if (now - row.window_started > 900) return true;
+  return row.attempts < maxAttempts;
+}
+async function recordRateLimit(request, env, identity, maxAttempts) {
+  const bucket = await authBucket(request, identity);
+  const now = Math.floor(Date.now() / 1000);
+  const row = await env.DB.prepare("SELECT attempts,window_started,blocked_until FROM auth_limits WHERE bucket=?").bind(bucket).first();
   if (!row || now - row.window_started > 900) {
     await env.DB.prepare("INSERT INTO auth_limits(bucket,attempts,window_started,blocked_until) VALUES(?,1,?,0) ON CONFLICT(bucket) DO UPDATE SET attempts=1,window_started=excluded.window_started,blocked_until=0").bind(bucket, now).run();
-    return true;
+    return maxAttempts > 1;
   }
   const attempts = row.attempts + 1;
-  await env.DB.prepare("UPDATE auth_limits SET attempts=?,blocked_until=? WHERE bucket=?").bind(attempts, attempts >= 8 ? now + 900 : 0, bucket).run();
-  return attempts < 8;
+  await env.DB.prepare("UPDATE auth_limits SET attempts=?,blocked_until=? WHERE bucket=?").bind(attempts, attempts >= maxAttempts ? now + 900 : 0, bucket).run();
+  return attempts < maxAttempts;
+}
+async function clearRateLimit(request, env, identity) {
+  const bucket = await authBucket(request, identity);
+  await env.DB.prepare("DELETE FROM auth_limits WHERE bucket=?").bind(bucket).run();
+}
+async function checkIpRateLimit(request, env, maxAttempts) {
+  const ip = request.headers.get("CF-Connecting-IP");
+  if (typeof ip !== "string" || !ip.trim()) return true;
+  return await checkRateLimit(request, env, "ip-global-v2", maxAttempts);
+}
+async function recordIpRateLimit(request, env, maxAttempts) {
+  const ip = request.headers.get("CF-Connecting-IP");
+  if (typeof ip !== "string" || !ip.trim()) return;
+  await recordRateLimit(request, env, "ip-global-v2", maxAttempts);
 }
 export async function onRequest(context) {
   const { request, env } = context;
@@ -82,7 +108,12 @@ export async function onRequest(context) {
       const email = String(body.email || "").trim().toLowerCase(), password = body.password;
       if (!validEmail(email) || typeof password !== "string" || password.length < 12 || password.length > 128) return json({ error: "invalid_email_or_password" }, 400);
       stage = "rate_limit";
-      if (!await rateLimit(request, env, email) || !await rateLimit(request, env, "ip-global")) return json({ error: "rate_limited" }, 429);
+      const registrationBucket = "register-v2:" + email;
+      if (!await checkRateLimit(request, env, registrationBucket, 8) || !await checkIpRateLimit(request, env, 40)) {
+        return json({ error: "rate_limited" }, 429);
+      }
+      await recordRateLimit(request, env, registrationBucket, 8);
+      await recordIpRateLimit(request, env, 40);
       stage = "check_email";
       const exists = await env.DB.prepare("SELECT id FROM users WHERE email=?").bind(email).first();
       if (exists) return json({ error: "registration_unavailable" }, 409);
@@ -112,11 +143,24 @@ export async function onRequest(context) {
   if (action === "login") {
     const email = String(body.email || "").trim().toLowerCase(), password = body.password;
     if (!validEmail(email) || typeof password !== "string" || password.length > 128) return json({ error: "invalid_credentials" }, 400);
-    if (!await rateLimit(request, env, email) || !await rateLimit(request, env, "ip-global")) return json({ error: "rate_limited" }, 429);
+    const loginBucket = "login-v2:" + email;
+    if (!await checkRateLimit(request, env, loginBucket, 8) || !await checkIpRateLimit(request, env, 40)) {
+      return json({ error: "rate_limited" }, 429);
+    }
     const user = await env.DB.prepare("SELECT id,email,password_hash,password_salt,status FROM users WHERE email=?").bind(email).first();
-    if (!user || user.status !== "active") { await passwordHash(password, "minios-tv-dummy-salt"); return json({ error: "invalid_credentials" }, 401); }
+    if (!user || user.status !== "active") {
+      await passwordHash(password, "minios-tv-dummy-salt");
+      await recordRateLimit(request, env, loginBucket, 8);
+      await recordIpRateLimit(request, env, 40);
+      return json({ error: "invalid_credentials" }, 401);
+    }
     const candidate = await passwordHash(password, user.password_salt);
-    if (candidate !== user.password_hash) return json({ error: "invalid_credentials" }, 401);
+    if (candidate !== user.password_hash) {
+      await recordRateLimit(request, env, loginBucket, 8);
+      await recordIpRateLimit(request, env, 40);
+      return json({ error: "invalid_credentials" }, 401);
+    }
+    await clearRateLimit(request, env, loginBucket);
     const token = await newSession(user.id, env);
     return json({ ok: true }, 200, { "Set-Cookie": cookie(token, SESSION_SECONDS) });
   }
