@@ -50,10 +50,68 @@ async function probeVideoSource(value,timeoutMs=2800){
 const COUNTRY_ALIASES={AR:"AR",ARG:"AR",ARGENTINA:"AR",BR:"BR",BRA:"BR",BRASIL:"BR",BRAZIL:"BR",CL:"CL",CHILE:"CL",UY:"UY",URUGUAY:"UY",PY:"PY",PARAGUAY:"PY",BO:"BO",BOLIVIA:"BO",PE:"PE",PERU:"PE",EC:"EC",ECUADOR:"EC",CO:"CO",COLOMBIA:"CO",VE:"VE",VENEZUELA:"VE",MX:"MX",MEXICO:"MX",CR:"CR",COSTARICA:"CR",CU:"CU",CUBA:"CU",DO:"DO",DOMINICANREPUBLIC:"DO",SV:"SV",ELSALVADOR:"SV",GT:"GT",GUATEMALA:"GT",HN:"HN",HONDURAS:"HN",NI:"NI",NICARAGUA:"NI",PA:"PA",PANAMA:"PA",PR:"PR",PUERTORICO:"PR"};
 function countryCode(value,fallback=""){const key=String(value||"").split(/[;,|]/)[0].trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[\s_-]+/g,"");return COUNTRY_ALIASES[key]||fallback;}
 function categoryFromGroup(value){const s=String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();if(/sport|deport|futbol|football|basket|tenis/.test(s))return "sports";if(/news|notic|inform|24.?h|actualidad/.test(s))return "news";if(/music|musica|radio|videoclip/.test(s))return "music";if(/kid|child|infant|nino|juvenil|cartoon|animacion/.test(s))return "kids";if(/movie|pelicul|cine|film/.test(s))return "movies";if(/series|serie|episodio|drama|comedia/.test(s))return "series";if(/document|documental|naturaleza|science/.test(s))return "documentary";if(/educ|school|univers/.test(s))return "education";if(/culture|cultur|arte|historia/.test(s))return "culture";if(/lifestyle|estilo|cocina|viaje|hogar/.test(s))return "lifestyle";if(/relig|faith/.test(s))return "religion";if(/entertain|entreten|show|variedad/.test(s))return "entertainment";return "general";}
+
+function categoryFromCatalog(values){
+ const text=(Array.isArray(values)?values:[values]).map(value=>String(value||"")).join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ if(/sport|deport|football|soccer/.test(text))return "sports";
+ if(/news|notic|inform|current affairs/.test(text))return "news";
+ if(/music|musica/.test(text))return "music";
+ if(/kid|child|animation|cartoon|juvenil/.test(text))return "kids";
+ if(/movie|film|cinema|pelicul/.test(text))return "movies";
+ if(/series|serie|drama|comedy/.test(text))return "series";
+ if(/document|science|nature|wildlife/.test(text))return "documentary";
+ if(/education|educational|school|university/.test(text))return "education";
+ if(/culture|arts|art|history/.test(text))return "culture";
+ if(/lifestyle|travel|cooking|food|health|fashion/.test(text))return "lifestyle";
+ if(/relig|faith/.test(text))return "religion";
+ if(/entertain|variety|show/.test(text))return "entertainment";
+ return "general";
+}
 function parseM3UEntries(text,defaultCountry,feedUrl,evidence){const lines=String(text||"").replace(/^\uFEFF/,"").split(/\r?\n/),entries=[];let meta=null,skipped=0;for(const raw of lines){const line=raw.trim();if(!line)continue;if(line.startsWith("#EXTINF:")){const comma=line.indexOf(","),attrsText=line.slice(8,comma<0?undefined:comma),attrs={};for(const m of attrsText.matchAll(/([\w-]+)=["']([^"']*)["']/g))attrs[m[1].toLowerCase()]=m[2];const name=comma<0?"":line.slice(comma+1).trim();meta={name:name||attrs["tvg-name"]||attrs["tvg-id"]||"",logo:attrs["tvg-logo"]||"",group:attrs["group-title"]||"",country:attrs["tvg-country"]||"",language:attrs["tvg-language"]||""};continue;}if(line.startsWith("#")||!meta)continue;let u;try{u=new URL(line);}catch{skipped++;meta=null;continue;}if(!isVideoSource(u.href)||!publicHttpsUrl(u.href)){skipped++;meta=null;continue;}const country=countryCode(meta.country,defaultCountry);if(!country||!COUNTRIES.includes(country)||!meta.name){skipped++;meta=null;continue;}const logo=publicHttpsUrl(meta.logo);entries.push({name:meta.name.slice(0,100),country,category:categoryFromGroup(meta.group),language:meta.language.slice(0,40),logo:logo?logo.href:"",url:u.href,group:meta.group.slice(0,80),feedUrl:feedUrl||"",evidence});meta=null;if(entries.length>=500)break;}return {entries,skipped};}
 export async function onRequest(context){const {request,env}=context;if(!env.DB)return json({error:"service_unavailable"},503);const actor=await requireAdmin(request,env);if(!actor)return json({error:"forbidden"},403);const url=new URL(request.url),parts=url.pathname.split("/").filter(Boolean),resource=parts[2],id=parts[3];const now=Math.floor(Date.now()/1000);
 if(request.method==="GET"&&resource==="users"){const r=await env.DB.prepare("SELECT id,email,role,status,created_at FROM users ORDER BY created_at DESC LIMIT 500").all();const rows=r.results||[];const permissions=await env.DB.prepare("SELECT user_id,category FROM user_category_permissions").all();const channelPermissions=await env.DB.prepare("SELECT user_id,channel_id FROM user_channel_permissions").all();const channelConfigured=await env.DB.prepare("SELECT user_id FROM user_channel_settings").all();const configured=await env.DB.prepare("SELECT user_id FROM user_category_settings").all();const byUser={};for(const p of permissions.results||[])(byUser[p.user_id]??=[]).push(p.category);const configuredIds=new Set((configured.results||[]).map(x=>x.user_id));const byChannel={};for(const p of channelPermissions.results||[])(byChannel[p.user_id]??=[]).push(p.channel_id);const channelConfiguredIds=new Set((channelConfigured.results||[]).map(x=>x.user_id));return json({users:rows.map(u=>({...u,categories:configuredIds.has(u.id)?(byUser[u.id]||[]):CATEGORIES,channelIds:channelConfiguredIds.has(u.id)?(byChannel[u.id]||[]):null}))});}
 if(request.method==="GET"&&resource==="channels"){const r=await env.DB.prepare("SELECT id,name,country,category,enabled,created_at,sources_json FROM channels ORDER BY name LIMIT 500").all();return json({channels:(r.results||[]).map(row=>{let meta={};try{meta=JSON.parse(row.sources_json||"[]")[0]||{};}catch{}return {id:row.id,name:row.name,country:row.country,category:row.category,enabled:!!row.enabled,created_at:row.created_at,source:typeof meta.url==="string"?meta.url:"",sources:(()=>{try{return JSON.parse(row.sources_json||"[]").map(x=>x.url).filter(Boolean)}catch{return []}})(),evidence:typeof meta.evidence==="string"?meta.evidence:"",website:typeof meta.website==="string"?meta.website:"",logo:typeof meta.logo==="string"?meta.logo:"",language:typeof meta.language==="string"?meta.language:"",description:typeof meta.description==="string"?meta.description:"",directory:meta.directory||"",verification:meta.verification&&typeof meta.verification==="object"?meta.verification:null};})});}
+
+if(request.method==="GET"&&resource==="discover-catalog"){
+ const selectedCountry=String(url.searchParams.get("country")||"ALL").trim().toUpperCase();
+ const rawCategory=String(url.searchParams.get("category")||"ALL").trim();
+ const selectedCategory=!rawCategory||rawCategory.toLowerCase()==="all"?"ALL":rawCategory.toLowerCase();
+ const query=String(url.searchParams.get("q")||"").trim().toLowerCase().slice(0,80);
+ const limit=Math.max(1,Math.min(180,Number(url.searchParams.get("limit")||120)||120));
+ const offset=Math.max(0,Math.min(5000,Number(url.searchParams.get("offset")||0)||0));
+ if(selectedCountry!=="ALL"&&!COUNTRIES.includes(selectedCountry))return json({error:"invalid_country"},400);
+ if(selectedCategory!=="ALL"&&!CATEGORIES.includes(selectedCategory))return json({error:"invalid_category"},400);
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9000);
+ let records;
+ try{
+  const response=await fetch("https://iptv-org.github.io/api/channels.json",{headers:{"Accept":"application/json","User-Agent":"Lumina-TV/1.4 public-channel-metadata-discovery"},signal:controller.signal,cf:{cacheTtl:900}});
+  if(!response.ok)return json({error:"metadata_source_failed",status:response.status},502);
+  const size=Number(response.headers.get("content-length")||0);
+  if(size>12582912)return json({error:"metadata_source_too_large"},413);
+  records=await response.json();
+  if(!Array.isArray(records))return json({error:"metadata_source_invalid"},502);
+ }catch(error){
+  return json({error:error?.name==="AbortError"?"metadata_source_timeout":"metadata_source_failed"},502);
+ }finally{clearTimeout(timer);}
+ const eligible=[];
+ for(const row of records){
+  const country=String(row?.country||"").toUpperCase();
+  if(!COUNTRIES.includes(country)||(selectedCountry!=="ALL"&&country!==selectedCountry))continue;
+  if(row.is_nsfw===true||row.closed)continue;
+  const name=String(row.name||"").trim().slice(0,100);
+  if(!name)continue;
+  const category=categoryFromCatalog(row.categories||[]);
+  if(selectedCategory!=="ALL"&&category!==selectedCategory)continue;
+  const website=publicHttpsUrl(String(row.website||""));
+  const searchText=[name,...(Array.isArray(row.alt_names)?row.alt_names:[]),row.network,...(Array.isArray(row.owners)?row.owners:[])].join(" ").toLowerCase();
+  if(query&&!searchText.includes(query))continue;
+  eligible.push({id:"IPTV:"+String(row.id||"").slice(0,140),label:name,description:[row.network,...(Array.isArray(row.owners)?row.owners:[])].filter(Boolean).join(" · ").slice(0,300),country,countryName:country,category,language:"",website:website?website.href:"",logo:"",source:"iptv-org"});
+ }
+ eligible.sort((a,b)=>a.country.localeCompare(b.country)||a.category.localeCompare(b.category)||a.label.localeCompare(b.label));
+ const page=eligible.slice(offset,offset+limit);
+ const wrapped=page.length?page:(offset?eligible.slice(0,limit):[]);
+ return json({results:wrapped,source:"iptv-org",total:eligible.length,offset:page.length?offset:0,nextOffset:eligible.length?(page.length?((offset+page.length)%eligible.length):0):0,notice:"Metadatos públicos de canales. No incluyen transmisiones ni acreditan derechos de distribución."});
+}
 if(request.method==="GET"&&resource==="discover"){
  const q=(url.searchParams.get("q")||"").trim().slice(0,80);
  if(q.length<2)return json({results:[]});
@@ -105,14 +163,17 @@ if(resource==="discover"&&request.method==="POST"){
  const incoming=new Set(),stmts=[];let added=0,duplicates=0,invalid=0;
  for(const item of items){
   const id=String(item?.id||""),name=String(item?.label||"").trim().slice(0,100),country=String(item?.country||"").toUpperCase();
-  if(!/^Q\d{1,12}$/.test(id)||!name||!COUNTRIES.includes(country)){invalid++;continue;}
+  if(!(/^Q\d{1,12}$/.test(id)||/^IPTV:[A-Za-z0-9._-]{1,140}$/.test(id))||!name||!COUNTRIES.includes(country)){invalid++;continue;}
   const key=country+"|"+normalizeChannelName(name);if(existing.has(key)||incoming.has(key)){duplicates++;continue;}
   incoming.add(key);
   let logo="";const logoUrl=publicHttpsUrl(String(item.logo||""));if(logoUrl)logo=logoUrl.href;
-  const evidence="https://www.wikidata.org/wiki/"+id;
-  const metadata={url:"",language:String(item.language||"").slice(0,40),logo,description:String(item.description||"").slice(0,500),evidence,discoveryId:id};
+  const sourceKind=id.startsWith("IPTV:")?"iptv-org":"wikidata";
+  const evidence=sourceKind==="wikidata"?"https://www.wikidata.org/wiki/"+id:"https://github.com/iptv-org/database";
+  const officialWebsite=publicHttpsUrl(String(item.website||""));
+  const category=CATEGORIES.includes(String(item.category||""))?String(item.category):"general";
+  const metadata={url:"",language:String(item.language||"").slice(0,40),logo,description:String(item.description||"").slice(0,500),evidence:officialWebsite?officialWebsite.href:evidence,website:officialWebsite?officialWebsite.href:"",discoveryId:id,directory:sourceKind,directoryUrl:sourceKind==="iptv-org"?"https://iptv-org.github.io/api/channels.json":"https://www.wikidata.org/"};
   const channelId=crypto.randomUUID();
-  stmts.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,"general",JSON.stringify([metadata]),0,now,now));
+  stmts.push(env.DB.prepare("INSERT INTO channels(id,name,country,category,sources_json,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(channelId,name,country,category,JSON.stringify([metadata]),0,now,now));
   stmts.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"channel_discovered_pending","channel",channelId,now));
   existing.add(key);added++;
  }
