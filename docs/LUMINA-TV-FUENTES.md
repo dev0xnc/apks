@@ -8,7 +8,7 @@ Una ficha pendiente no se expone en el catálogo de usuarios hasta que el admini
 
 ## Buscar listas automáticamente
 
-En Administración, **Buscar listas automáticamente** consulta el catálogo estructurado de Teleonline (\`https://raw.githubusercontent.com/teleonline/listas/main/tv.json\`). La interfaz permite elegir país, cantidad máxima de señales a comprobar (5, 10, 20, 40 o 60) y presupuesto de tiempo (8, 12, 18 o 25 segundos). El servidor limita la cantidad real de comprobaciones y sus tiempos de espera; si se alcanza el límite, informa cuántas candidatas quedaron sin comprobar.
+En Administración, **Buscar listas automáticamente** consulta el catálogo estructurado de Teleonline (\`https://raw.githubusercontent.com/teleonline/listas/main/tv.json\`). La interfaz permite elegir país, categoría (deportes, noticias, música, infantil, películas, series, documentales, entretenimiento, educación, cultura, estilo de vida y religión), cantidad máxima de señales a comprobar y presupuesto de tiempo. El servidor limita la cantidad real de comprobaciones y sus tiempos de espera; si se alcanza el límite, informa cuántas candidatas quedaron sin comprobar.
 
 Antes de guardar una fuente, Lúmina realiza una petición HTTPS de lectura parcial, sin seguir redirecciones. Para HLS verifica que el contenido contenga \`#EXTM3U\`; para MPEG-DASH comprueba el manifiesto \`<MPD>\`; para vídeo directo exige un tipo MIME de vídeo reconocido. Se priorizan los formatos que el reproductor ya gestiona (HLS con HLS.js o soporte nativo, MPEG-DASH con dash.js y archivos directos compatibles). Las fuentes que no responden, redirigen, devuelven una página HTML o no coinciden con el formato se muestran como no validadas y no se incorporan como señales verificadas.
 
@@ -47,7 +47,7 @@ La API del catálogo devuelve a cada usuario únicamente las señales activas co
 
 El botón **Actualizar** muestra el estado de la consulta en la propia sección TV en vivo, junto con la hora de actualización y las cantidades activas y pendientes. En Administración, **Probar** abre un reproductor de vista previa para comprobar la señal en el navegador del administrador; esto no publica el canal ni reemplaza la revisión de autorización.
 
-La tabla de Administración permite seleccionar varios canales, eliminar la selección o borrar el catálogo completo. El borrado total requiere escribir exactamente `BORRAR TODOS LOS CANALES`. La eliminación de una ficha también elimina automáticamente sus permisos individuales asociados.
+La tabla de Administración separa las acciones **Editar** y **Activar / desactivar**: editar metadatos no cambia el estado de publicación. Al activar, se pueden ingresar hasta cinco fuentes HTTPS (una por línea) y cada una debe superar la validación técnica. La tabla permite seleccionar varios canales, eliminar la selección o borrar el catálogo completo. El borrado total requiere escribir exactamente `BORRAR TODOS LOS CANALES`. La eliminación de una ficha también elimina automáticamente sus permisos individuales asociados.
 
 ## Límites operativos y permisos
 
