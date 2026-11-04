@@ -18,6 +18,10 @@ El descubrimiento público puede completar metadatos (nombre, país, idioma y si
 
 La disponibilidad de reproducción depende del proveedor, el navegador, CORS, formatos y restricciones regionales o de acceso. No se incluyen listas pirateadas ni se eluden controles de acceso.
 
+## Guía de fuentes
+
+Consultá [`docs/LUMINA-TV-FUENTES.md`](docs/LUMINA-TV-FUENTES.md) para el descubrimiento de canales, la importación de listas M3U autorizadas, la actualización de catálogo y los formatos de reproducción admitidos.
+
 ## Desarrollo y despliegue
 
 Usá el entorno Preview de Cloudflare Pages y la base D1 de Preview para probar cambios. No ejecutes migraciones ni despliegues en producción sin revisar y autorizar expresamente esos pasos.
