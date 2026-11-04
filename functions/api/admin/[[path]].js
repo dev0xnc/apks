@@ -208,27 +208,45 @@ if(resource==="discover-playlists"&&request.method==="POST"){
   raw+=decoder.decode();
  }catch{return json({error:"directory_fetch_failed"},502);}finally{clearTimeout(timer);}
  let directory;try{directory=JSON.parse(raw);}catch{return json({error:"directory_invalid"},502);}
- const cleanCountry=value=>countryCode(String(value||"").replace(/^[^\p{L}]*/u,"").trim());
- const candidates=[],seen=new Set();let skipped=0,withoutStream=0;
- for(const countryRecord of directory.countries||[]){
-  const country=cleanCountry(countryRecord.name);
-  if(!COUNTRIES.includes(country)||(selectedCountry!=="ALL"&&country!==selectedCountry))continue;
-  for(const ambit of countryRecord.ambits||[]){
-   if(/adult|nsfw|porn|erotic|xxx|18\s*\+/i.test(String(ambit.name||"")))continue;
-   if(selectedCategory!=="ALL"&&categoryFromGroup(ambit.name||"")!==selectedCategory)continue;
-   for(const item of ambit.channels||[]){
+
+ const cleanCountry=value=>{
+  const raw=String(value||"").trim();
+  const attempts=[raw,raw.replace(/^[^\\p{L}]*/u,"").trim(),(raw.match(/[\\p{L}][\\p{L} .'-]*/u)||[])[0]||""];
+  for(const attempt of attempts){const code=countryCode(attempt);if(code)return code;}
+  return "";
+ };
+ if(!Array.isArray(directory.countries))return json({error:"directory_invalid_structure"},502);
+ const candidates=[],seen=new Set();
+ let skipped=0,withoutStream=0,countriesMatched=0,channelsScanned=0,channelsWithOptions=0,directOptionsFound=0;
+ const categoryCounts={};
+ for(const countryRecord of directory.countries){
+  const recordCountry=cleanCountry(countryRecord?.name||countryRecord?.country||countryRecord?.code);
+  let recordMatched=false;
+  for(const ambit of countryRecord?.ambits||[]){
+   if(/adult|nsfw|porn|erotic|xxx|18\\s*\\+/i.test(String(ambit?.name||"")))continue;
+   for(const item of ambit?.channels||[]){
+    channelsScanned++;
+    const country=recordCountry||cleanCountry(item?.country);
+    if(!COUNTRIES.includes(country)||(selectedCountry!=="ALL"&&country!==selectedCountry))continue;
+    if(!recordMatched){countriesMatched++;recordMatched=true;}
     const name=String(item?.name||"").trim().slice(0,100);
-    if(!name||/(adult|nsfw|porn|erotic|xxx|18\s*\+)/i.test(name+" "+String(ambit.name||""))){skipped++;continue;}
+    const categoryText=[ambit?.name,item?.category,item?.group,item?.genre,item?.type,name].filter(Boolean).join(" ");
+    const category=categoryFromGroup(categoryText);
+    if(selectedCategory!=="ALL"&&category!==selectedCategory)continue;
+    if(!name||/(adult|nsfw|porn|erotic|xxx|18\\s*\\+)/i.test(name+" "+String(ambit?.name||""))){skipped++;continue;}
     const options=Array.isArray(item.options)?item.options:[];
+    if(options.length)channelsWithOptions++;
     const priority={m3u8:0,mpd:1,mp4:2,m4v:3,webm:4,ogv:5,ogg:6};
     const streams=[...new Set(options.map(option=>publicHttpsUrl(String(option?.url||""))).filter(candidate=>candidate&&DIRECT_VIDEO_EXTENSIONS.includes(directVideoExtension(candidate))).map(candidate=>candidate.href))].sort((a,b)=>priority[directVideoExtension(new URL(a))]-priority[directVideoExtension(new URL(b))]).slice(0,5);
+    directOptionsFound+=streams.length;
     if(!streams.length){withoutStream++;continue;}
     const key=country+"|"+normalizeChannelName(name);
     if(seen.has(key)){skipped++;continue;}
     seen.add(key);
     const website=publicHttpsUrl(String(item.web||""));
     const logoUrl=publicHttpsUrl(String(item.logo||""));
-    candidates.push({name,country,category:categoryFromGroup(ambit.name||""),urls:streams,logo:logoUrl?logoUrl.href:"",website:website?website.href:"",evidence:website?website.href:directoryPage});
+    categoryCounts[category]=(categoryCounts[category]||0)+1;
+    candidates.push({name,country,category,urls:streams,logo:logoUrl?logoUrl.href:"",website:website?website.href:"",evidence:website?website.href:directoryPage});
    }
   }
  }
@@ -278,7 +296,7 @@ if(resource==="discover-playlists"&&request.method==="POST"){
  }
  for(let i=0;i<statements.length;i+=100)await env.DB.batch(statements.slice(i,i+100));
  const elapsedMs=Date.now()-startedAt,notChecked=Math.max(0,candidates.length-checked.length);
- return json({ok:true,source:"Teleonline",country:selectedCountry,category:selectedCategory,requestedLimit:limit,timeBudgetSeconds,elapsedMs,candidatesFound:candidates.length,checked:checked.length,verified:checked.filter(x=>x.probe.ok).length,verifiedOptions:checked.reduce((n,x)=>n+(x.verifiedSources?.length||0),0),failed,added,enriched,alreadyConfigured,withoutStream,skipped,notChecked,results:checked.map(x=>({name:x.name,country:x.country,category:x.category,ok:x.probe.ok,options:x.verifiedSources?.length||0,code:x.probe.code,kind:x.probe.kind||"",message:x.probe.message,added:!!x.probe.ok})),directoryUrl});
+ return json({ok:true,source:"Teleonline",country:selectedCountry,category:selectedCategory,requestedLimit:limit,timeBudgetSeconds,elapsedMs,countriesRead:directory.countries.length,countriesMatched,channelsScanned,channelsWithOptions,directOptionsFound,categoryCounts,candidatesFound:candidates.length,checked:checked.length,verified:checked.filter(x=>x.probe.ok).length,verifiedOptions:checked.reduce((n,x)=>n+(x.verifiedSources?.length||0),0),failed,added,enriched,alreadyConfigured,withoutStream,skipped,notChecked,results:checked.map(x=>({name:x.name,country:x.country,category:x.category,ok:x.probe.ok,options:x.verifiedSources?.length||0,code:x.probe.code,kind:x.probe.kind||"",message:x.probe.message,added:!!x.probe.ok})),directoryUrl});
 }
 if(resource==="import-m3u"&&request.method==="POST"){
  if(body.rightsConfirmed!==true)return json({error:"rights_confirmation_required"},400);
