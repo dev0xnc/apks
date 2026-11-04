@@ -373,6 +373,63 @@ if(resource==="users"&&id&&parts[4]==="categories"&&request.method==="PATCH"){co
 if(resource==="users"&&id&&parts[4]==="password"&&request.method==="PATCH"){const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();if(!target||target.role==="admin")return json({error:"not_found"},404);const password=body.password;if(typeof password!=="string"||password.length<12||password.length>128)return json({error:"invalid_password"},400);const salt=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,"0")).join("");const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode(salt),iterations:100000},key,256);const hash=Array.from(new Uint8Array(bits),x=>x.toString(16).padStart(2,"0")).join("");await env.DB.prepare("UPDATE users SET password_hash=?,password_salt=?,updated_at=? WHERE id=?").bind(hash,salt,now,id).run();await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(id).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"user_password_reset","user",id,now).run();return json({ok:true,sessions_revoked:true});}
 if(resource==="users"&&id&&request.method==="PATCH"){if(!["active","suspended"].includes(body.status))return json({error:"invalid_status"},400);const target=await env.DB.prepare("SELECT role FROM users WHERE id=?").bind(id).first();if(!target||target.role==="admin")return json({error:"not_found"},404);await env.DB.prepare("UPDATE users SET status=?,updated_at=? WHERE id=?").bind(body.status,now,id).run();await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(id).run();await env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,"user_status_"+body.status,"user",id,now).run();return json({ok:true});}
 
+if(resource==="channels"&&id==="bulk-status"&&request.method==="POST"){
+ if(typeof body.enabled!=="boolean")return json({error:"invalid_channel_status"},400);
+ const all=body.all===true;
+ let rows=[];
+ if(all){
+  const result=await env.DB.prepare("SELECT id,name,sources_json,enabled FROM channels").all();
+  rows=result.results||[];
+ }else{
+  if(!Array.isArray(body.ids)||body.ids.length<1||body.ids.length>500||body.ids.some(x=>typeof x!=="string"||x.length>80))return json({error:"invalid_channel_ids"},400);
+  const requested=[...new Set(body.ids)];
+  for(let offset=0;offset<requested.length;offset+=80){
+   const batch=requested.slice(offset,offset+80);
+   const result=await env.DB.prepare("SELECT id,name,sources_json,enabled FROM channels WHERE id IN ("+batch.map(()=>"?").join(",")+")").bind(...batch).all();
+   rows.push(...(result.results||[]));
+  }
+ }
+ let changed=0,skipped=0,unchanged=0,skippedNoSource=0,skippedUnverified=0,skippedNoEvidence=0;
+ const updates=[];
+ for(const row of rows){
+  if(!!row.enabled===body.enabled){unchanged++;continue;}
+  if(body.enabled){
+   let sources=[];try{sources=JSON.parse(row.sources_json||"[]");}catch{}
+   if(!Array.isArray(sources))sources=[];
+   const hasSource=sources.some(item=>item&&typeof item.url==="string"&&item.url.trim());
+   if(!hasSource){skipped++;skippedNoSource++;continue;}
+   const eligible=sources.some(item=>{
+    if(!item||typeof item.url!=="string"||!item.url.trim()||item.verification?.ok!==true)return false;
+    const evidence=publicHttpsUrl(String(item.evidence||sources.find(x=>x&&x.evidence)?.evidence||""));
+    const source=publicHttpsUrl(String(item.url));
+    return !!evidence&&!!source;
+   });
+   if(!eligible){
+    skipped++;
+    const anyVerified=sources.some(item=>item?.verification?.ok===true&&publicHttpsUrl(String(item.url||"")));
+    if(!anyVerified)skippedUnverified++;
+    else skippedNoEvidence++;
+    continue;
+   }
+  }
+  updates.push(row.id);
+ }
+ try{
+  for(let offset=0;offset<updates.length;offset+=20){
+   const batch=updates.slice(offset,offset+20),statements=[];
+   for(const channelId of batch){
+    statements.push(env.DB.prepare("UPDATE channels SET enabled=?,updated_at=? WHERE id=?").bind(body.enabled?1:0,now,channelId));
+    statements.push(env.DB.prepare("INSERT INTO audit_log(id,actor_user_id,action,target_type,target_id,created_at) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID(),actor.id,body.enabled?"channels_bulk_enable":"channels_bulk_disable","channel",channelId,now));
+   }
+   await env.DB.batch(statements);
+   changed+=batch.length;
+  }
+ }catch(error){
+  const detail=String(error?.message||"database_error").replace(/[\\r\\n]+/g," ").slice(0,180);
+  return json({error:"channel_bulk_status_failed",detail,changed,skipped,unchanged},500);
+ }
+ return json({ok:true,enabled:body.enabled,requested:rows.length,changed,skipped,unchanged,skippedNoSource,skippedUnverified,skippedNoEvidence,all});
+}
 if(resource==="channels"&&id==="bulk-delete"&&request.method==="POST"){
  const all=body.all===true;
  let ids=[];
