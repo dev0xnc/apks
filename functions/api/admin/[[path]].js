@@ -205,8 +205,9 @@ if(resource==="discover-playlists"&&request.method==="POST")return json({error:"
 if(resource==="discover-all-playlists"&&request.method==="POST"){
  const country=String(body.country||"ALL").trim().toUpperCase();
  if(country!=="ALL"&&!COUNTRIES.includes(country))return json({error:"invalid_country"},400);
- const q=String(body.q||"").trim().toLowerCase().slice(0,80);
- const results=OFFICIAL_SPORTS_SOURCES.filter(item=>(country==="ALL"||item.country===country||(item.global&&!(item.excludedCountries||[]).includes(country)))&&(!q||[item.name,item.provider,item.description].join(" ").toLowerCase().includes(q))).map(item=>({...item,country:country==="ALL"?item.country:country}));
+ const normalizeSearch=value=>String(value||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim();
+ const q=normalizeSearch(body.q).slice(0,80);
+ const results=OFFICIAL_SPORTS_SOURCES.filter(item=>(country==="ALL"||item.country===country||(item.global&&!(item.excludedCountries||[]).includes(country)))&&(!q||normalizeSearch([item.name,item.provider,item.description].join(" ")).includes(q))).map(item=>({...item,country:country==="ALL"?item.country:country}));
  return json({ok:true,source:"official-provider-directory",country,results:results.map(item=>({...item,externalOnly:true,authorizationStatus:"approved_for_external_link"})),total:results.length,notice:"Se muestran páginas oficiales externas. Lúmina abre el sitio del titular; no copia ni redistribuye su señal. La disponibilidad, precio y territorio los define cada proveedor."});
 }
 if(resource==="official-sports"&&request.method==="POST"){
