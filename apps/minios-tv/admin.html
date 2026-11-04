@@ -284,9 +284,16 @@ $("autoPlaylistSearch").onclick=async()=>{
  status.textContent="Consultando el directorio y comprobando hasta "+limit+" señales (máximo "+timeBudgetSeconds+" segundos)…";
  try{
   const result=await api("discover-playlists",{method:"POST",body:JSON.stringify({country,category,limit,timeBudgetSeconds})});
-  status.textContent="Búsqueda terminada en "+(result.elapsedMs/1000).toFixed(1)+" s: "+result.checked+" comprobadas, "+result.verified+" canales compatibles y "+(result.verifiedOptions||0)+" opciones de reproducción, "+result.added+" nuevas y pendientes, "+result.enriched+" fichas completadas, "+result.failed+" rechazadas y "+result.notChecked+" sin comprobar por límite de tiempo o cantidad.";
+  const elapsed=(Number(result.elapsedMs||0)/1000).toFixed(1);
+  const candidates=Number(result.candidatesFound||0);
+  const diagnostics="Lectura: "+(result.countriesRead||0)+" países en el directorio · "+(result.countriesMatched||0)+" coincidentes · "+(result.channelsScanned||0)+" fichas revisadas · "+(result.channelsWithOptions||0)+" con opciones · "+(result.directOptionsFound||0)+" enlaces directos compatibles con el filtro.";
+  if(!candidates){
+   status.textContent="Directorio consultado en "+elapsed+" s, pero no se encontraron candidatos para los filtros elegidos. "+diagnostics+" Probá «Toda Latinoamérica» y «Todas las categorías».";
+  }else{
+   status.textContent="Búsqueda terminada en "+elapsed+" s: "+candidates+" candidatos encontrados, "+result.checked+" comprobados, "+result.verified+" técnicamente compatibles y "+(result.verifiedOptions||0)+" opciones de reproducción, "+result.added+" canales nuevos pendientes, "+result.enriched+" fichas completadas, "+result.failed+" rechazados y "+result.notChecked+" sin comprobar por límite de tiempo. "+diagnostics;
+  }
   const results=result.results||[];
-  $("autoPlaylistResults").innerHTML=results.map(x=>'<div class="result"><strong>'+esc(x.name)+' · '+esc(x.country)+'</strong><span class="muted">'+(x.ok?"✓ Compatible · "+esc(x.kind)+" · "+(x.options||1)+" opciones":"✕ No validada")+' — '+esc(x.message||"")+'</span></div>').join("")||'<p class="muted">No hubo transmisiones directas para comprobar en esta selección.</p>';
+  $("autoPlaylistResults").innerHTML=results.map(x=>'<div class="result"><strong>'+esc(x.name)+' · '+esc(x.country)+' · '+esc(x.category||"general")+'</strong><span class="muted">'+(x.ok?"✓ Compatible · "+esc(x.kind)+" · "+(x.options||1)+" opciones":"✕ No validada")+' — '+esc(x.message||"")+'</span></div>').join("")||'<p class="muted">'+(candidates?"Se encontraron candidatos, pero ninguno alcanzó la etapa de comprobación.":"No hubo señales directas compatibles. Las fichas solo se incorporan cuando tienen enlaces directos reproducibles; los enlaces de plataformas de vídeo se excluyen de esta prueba.")+'</p>';
   await load();
  }catch(error){status.textContent="No se pudo completar la búsqueda: "+error.message;}
  finally{button.disabled=false;}
