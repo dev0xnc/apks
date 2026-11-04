@@ -478,14 +478,21 @@ if(resource==="channels"&&id&&request.method==="PATCH"){
  }
  const evidenceUrl=publicHttpsUrl(evidence);
  if(!evidenceUrl)return json({error:"invalid_channel_evidence"},400);
- const checked=[];let failedSources=0;
+ const safeUrls=[];
  for(const value of urls){
   const safeSource=publicHttpsUrl(value);
   if(!safeSource||!isVideoSource(safeSource.href))return json({error:"invalid_source"},400);
-  const verification=enabled?await probeVideoSource(safeSource.href):null;
-  if(enabled&&!verification.ok){failedSources++;continue;}
-  const previous=oldSources.find(item=>item.url===safeSource.href)||{};
-  checked.push({...previous,url:safeSource.href,evidence:evidenceUrl.href,authorizationStatus:enabled?"approved":(previous.authorizationStatus||"pending"),authorizationScope:previous.authorizationScope||"direct_feed",authorizationConfirmedAt:enabled?now:(previous.authorizationConfirmedAt||null),verification:verification||previous.verification||null});
+  if(!safeUrls.includes(safeSource.href))safeUrls.push(safeSource.href);
+ }
+ const checked=[];let failedSources=0;
+ for(let offset=0;offset<safeUrls.length;offset+=8){
+  const batch=safeUrls.slice(offset,offset+8);
+  const validations=await Promise.all(batch.map(async url=>({url,verification:enabled?await probeVideoSource(url,1800):null})));
+  for(const item of validations){
+   if(enabled&&!item.verification?.ok){failedSources++;continue;}
+   const previous=oldSources.find(sourceItem=>sourceItem.url===item.url)||{};
+   checked.push({...previous,url:item.url,evidence:evidenceUrl.href,authorizationStatus:enabled?"approved":(previous.authorizationStatus||"pending"),authorizationScope:previous.authorizationScope||"direct_feed",authorizationConfirmedAt:enabled?now:(previous.authorizationConfirmedAt||null),verification:item.verification||previous.verification||null});
+  }
  }
  if(enabled&&!checked.some(item=>item.authorizationStatus==="approved"&&item.verification?.ok===true))return json({error:"source_not_verified",failedSources},422);
  const nextSources=[...checked,...officialSources].slice(0,MAX_CHANNEL_SOURCES);
