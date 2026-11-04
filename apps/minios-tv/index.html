@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#100b1d"><meta name="description" content="Lúmina TV: tu centro multimedia para canales y contenido autorizado.">
+<meta name="theme-color" content="#100b1d"><meta name="description" content="Lúmina TV: televisión en vivo en un solo lugar.">
 <title>Lúmina TV</title><link rel="manifest" href="./manifest.json">
 <style>
 :root{color-scheme:dark;--bg:#0b0812;--panel:#151020;--panel2:#20172e;--line:#382847;--text:#f7f1ff;--muted:#b8a9c7;--accent:#b58cff;--accent2:#e1c5ff;--good:#8ce0b8;--warn:#ffd28a;--bad:#ff9dba;--shadow:0 18px 55px #0007}
@@ -27,7 +27,7 @@ main{min-width:0;width:100%;max-width:1500px;margin:auto;padding:clamp(18px,3vw,
 <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="brand-mark">M</div><div>LÚ<span>MINA</span> TV</div></div><div class="header-actions"><a href="#live">TV en vivo</a><a id="adminLink" class="hidden" href="./admin.html">Administración</a><button id="accountButton" type="button">Mi cuenta</button><button id="logoutButton" type="button">Cerrar sesión</button></div></header><dialog id="accountDialog" style="background:#151020;color:#f7f1ff;border:1px solid #74538d;border-radius:18px;padding:24px;max-width:420px;width:calc(100% - 28px)"><h2>Mi cuenta</h2><p class="muted">Cambiar contraseña</p><form id="passwordForm"><input id="currentPassword" class="input" type="password" autocomplete="current-password" placeholder="Contraseña actual" required style="width:100%;margin:7px 0"><input id="newPassword" class="input" type="password" autocomplete="new-password" minlength="12" placeholder="Nueva contraseña (12+ caracteres)" required style="width:100%;margin:7px 0"><button class="btn primary" type="submit">Actualizar contraseña</button></form><p id="accountStatus" class="status"></p><button class="btn" id="closeAccount" type="button">Cerrar</button></dialog>
+<header><div class="brand"><div class="brand-mark" aria-label="Lúmina TV">L</div><div>LÚ<span>MINA</span> TV</div></div><div class="header-actions"><a href="#live">TV en vivo</a><a id="adminLink" class="hidden" href="./admin.html">Administración</a><button id="accountButton" type="button">Mi cuenta</button><button id="logoutButton" type="button">Cerrar sesión</button></div></header><dialog id="accountDialog" style="background:#151020;color:#f7f1ff;border:1px solid #74538d;border-radius:18px;padding:24px;max-width:420px;width:calc(100% - 28px)"><h2>Mi cuenta</h2><p class="muted">Cambiar contraseña</p><form id="passwordForm"><input id="currentPassword" class="input" type="password" autocomplete="current-password" placeholder="Contraseña actual" required style="width:100%;margin:7px 0"><input id="newPassword" class="input" type="password" autocomplete="new-password" minlength="12" placeholder="Nueva contraseña (12+ caracteres)" required style="width:100%;margin:7px 0"><button class="btn primary" type="submit">Actualizar contraseña</button></form><p id="accountStatus" class="status"></p><button class="btn" id="closeAccount" type="button">Cerrar</button></dialog>
 <div class="shell">
 <aside aria-label="Navegación principal">
 <button class="nav active" data-tab="home"><span class="ico">⌂</span>Inicio</button>
